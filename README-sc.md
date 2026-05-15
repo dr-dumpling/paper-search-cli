@@ -42,12 +42,22 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 要求 Node.js >= 18.0.0 和 npm。
 
 ```bash
-npm install -g github:dr-dumpling/paper-search-cli
+npm install -g paper-search-cli
 paper-search setup
 paper-search search "machine learning" --platform crossref --max-results 3 --pretty
 ```
 
-GitHub 安装包已经包含构建后的 CLI。安装后运行 `paper-search setup`，即可把可选 API key 和 email 写入用户级配置。
+安装后运行 `paper-search setup`，即可把可选 API key 和 email 写入用户级配置。
+
+如果仓库仍是私有状态，或 npm 包还没有正式发布，请先从已授权的仓库副本安装：
+
+```bash
+git clone git@github.com:dr-dumpling/paper-search-cli.git
+cd paper-search-cli
+npm install
+npm run build
+npm install -g .
+```
 
 ### 常用检查
 

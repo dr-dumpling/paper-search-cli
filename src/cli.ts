@@ -76,6 +76,10 @@ Examples:
 }
 
 function parseCli(argv: string[]): ParsedCli {
+  if (argv[0] === '--help' || argv[0] === '-h') {
+    return { command: 'help', positionals: [], flags: { help: true } };
+  }
+
   const [command = 'help', ...rest] = argv;
   const flags: Record<string, FlagValue> = {};
   const positionals: string[] = [];

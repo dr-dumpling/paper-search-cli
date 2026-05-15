@@ -42,12 +42,22 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 Requires Node.js >= 18.0.0 and npm.
 
 ```bash
-npm install -g github:dr-dumpling/paper-search-cli
+npm install -g paper-search-cli
 paper-search setup
 paper-search search "machine learning" --platform crossref --max-results 3 --pretty
 ```
 
-The GitHub install includes the built CLI. Run `paper-search setup` after installation to write optional API keys and emails into the user config.
+Run `paper-search setup` after installation to write optional API keys and emails into the user config.
+
+If this repository is still private or the npm package has not been published yet, install from an authenticated checkout instead:
+
+```bash
+git clone git@github.com:dr-dumpling/paper-search-cli.git
+cd paper-search-cli
+npm install
+npm run build
+npm install -g .
+```
 
 ### Common Checks
 
