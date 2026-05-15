@@ -4,7 +4,7 @@
 
 Paper Search CLI is a standalone Node.js command line tool for searching, validating, and downloading academic papers from multiple scholarly sources. It is designed for direct terminal use, automation scripts, and agent workflows that need a stable command surface with predictable JSON output.
 
-It keeps the detailed platform coverage and safety model of the earlier Paper Search implementation, but runs as a normal CLI process. There is no long-running background service to configure, start, or keep alive.
+It keeps the broad platform coverage, unified paper model, and detailed capability descriptions of the earlier Paper Search implementation, but runs as a normal CLI process. There is no long-running background service to configure, start, or keep alive.
 
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
@@ -12,17 +12,7 @@ It keeps the detailed platform coverage and safety model of the earlier Paper Se
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 
-## Current Status
-
-| Area | Status |
-| --- | --- |
-| Runtime | Standalone Node.js CLI |
-| Main command | `paper-search` |
-| Current platform count | 20 implemented sources/platforms |
-| Output style | JSON by default, optional text output |
-| Configuration | Shell env/current `.env` plus user config at `~/.config/paper-search-cli/config.json` |
-| Best current default | `crossref` + `openalex` for broad metadata, `pubmed` + `pmc`/`europepmc` for biomedical search, `arxiv` for preprints |
-| New upstream ideas absorbed | `--sources` fan-out, DOI/title dedupe, open-access-first `download_with_fallback` |
+[Quick Start](#quick-start) · [Configuration](#configuration) · [Supported Platforms](#supported-platforms) · [Commands](#commands) · [Tool Reference](#tool-reference) · [Troubleshooting](#troubleshooting)
 
 ## Design Goals
 
@@ -39,112 +29,67 @@ It keeps the detailed platform coverage and safety model of the earlier Paper Se
 - **JSON-first output**: stdout is machine-readable JSON by default; stderr is reserved for human-readable diagnostics.
 - **Unified paper model**: normalized title, authors, DOI, source, dates, abstract, PDF URL, citation count, and provider-specific metadata where available.
 - **Multi-source search with dedupe**: query selected sources with `--sources crossref,openalex,pmc`, or use curated `platform=all`, then merge duplicates by DOI and title/author keys.
+- **Semantic Scholar body-snippet search**: `search_semantic_snippets` searches Semantic Scholar's Open Access snippet index for body-text snippets, which is useful for finding methodological details. It requires `SEMANTIC_SCHOLAR_API_KEY`.
 - **Open-access-first fallback download**: `download_with_fallback` tries native source download, discovered PDF URLs, PMC/Europe PMC/CORE/OpenAIRE, Unpaywall DOI resolution, then optional Sci-Hub only when explicitly enabled.
-- **Security-first request handling**: DOI validation, query sanitization, sensitive data masking, and structured error handling.
 - **Rate limits and retry logic**: platform-specific rate limiting and retryable API error handling.
 - **PDF download support**: download from supported sources such as arXiv, bioRxiv, medRxiv, Semantic Scholar, IACR, Sci-Hub, Springer open access, and Wiley DOI-based access.
 - **Agent-friendly commands**: `tools`, `status`, `search`, `download`, and `run` cover both simple use and precise advanced calls.
+
+## Quick Start
+
+### Install
+
+Requires Node.js >= 18.0.0 and npm.
+
+```bash
+npm install -g github:dr-dumpling/paper-search-cli
+paper-search setup
+paper-search search "machine learning" --platform crossref --max-results 3 --pretty
+```
+
+GitHub installation runs the package `prepare` script and builds the CLI automatically. If npm hides lifecycle output, the first `paper-search status --pretty` run still points users to setup.
+
+### Common Checks
+
+```bash
+paper-search status --pretty
+paper-search tools --pretty
+paper-search config doctor --pretty
+```
 
 ## Supported Platforms
 
 | Platform | Search | Download | Full Text | Citations | API Key | Special Features |
 | --- | --- | --- | --- | --- | --- | --- |
-| Crossref | Yes | No | No | Yes | No | Default search platform, broad metadata coverage |
-| OpenAlex | Yes | Via fallback URL | No | Yes | No | Broad free metadata, concepts, OA location discovery |
-| arXiv | Yes | Yes | Yes | No | No | Physics, CS, math, and related preprints |
-| Web of Science | Yes | No | No | Yes | Required | Citation database, date sorting, year ranges |
-| PubMed | Yes | No | No | No | Optional | Biomedical literature through NCBI E-utilities |
-| PubMed Central | Yes | Yes | Yes | No | No | Open biomedical full text and PMC PDFs |
-| Europe PMC | Yes | Yes | Yes | No | No | Biomedical metadata plus open full-text links |
-| Google Scholar | Yes | No | No | Yes | No | Broad academic discovery, scrape-based |
-| bioRxiv | Yes | Yes | Yes | No | No | Biology preprints |
-| medRxiv | Yes | Yes | Yes | No | No | Medical preprints |
-| Semantic Scholar | Yes | Yes | No | Yes | Optional | AI-oriented semantic paper search |
-| CORE | Yes | Record-dependent | Record-dependent | No | Optional | Open repository metadata and PDF candidates |
-| OpenAIRE | Yes | Via fallback URL | No | No | Optional | Open repository discovery source |
-| Unpaywall | DOI only | Via fallback URL | No | No | Email required | DOI-based open-access resolution |
-| IACR ePrint | Yes | Yes | Yes | No | No | Cryptography papers |
-| Sci-Hub | Yes | Yes | No | No | No | DOI-based paper lookup and PDF retrieval |
-| ScienceDirect | Yes | No | No | Yes | Required | Elsevier metadata and abstracts |
-| Springer Nature | Yes | Open access only | No | No | Required | Metadata API and OpenAccess API |
-| Wiley | No keyword search | Yes | Yes | No | Required | TDM API, DOI-based PDF download only |
-| Scopus | Yes | No | No | Yes | Required | Abstract and citation database |
+| Crossref | ✅ | ❌ | ❌ | ✅ | ❌ | Default search platform, broad metadata coverage |
+| OpenAlex | ✅ | 🟡 Conditional | ❌ | ✅ | ❌ | Broad free metadata; can feed fallback downloads when records include OA links |
+| arXiv | ✅ | ✅ | ✅ | ❌ | ❌ | Physics, CS, math, and related preprints |
+| Web of Science | ✅ | ❌ | ❌ | ✅ | ✅ Required | Citation database, date sorting, year ranges |
+| PubMed | ✅ | ❌ | ❌ | ❌ | 🟡 Optional | Biomedical literature through NCBI E-utilities |
+| PubMed Central | ✅ | ✅ | ✅ | ❌ | ❌ | Open biomedical full text and PMC PDFs |
+| Europe PMC | ✅ | ✅ | ✅ | ❌ | ❌ | Biomedical metadata plus open full-text links |
+| Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | Broad academic discovery, scrape-based |
+| bioRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | Biology preprints |
+| medRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | Medical preprints |
+| Semantic Scholar | ✅ | ✅ | ✅ Body snippets | ✅ | 🟡 Optional* | AI semantic search + OA body snippets |
+| CORE | ✅ | 🟡 Conditional | 🟡 Conditional | ❌ | 🟡 Optional | Downloads work when records include PDF or full-text links |
+| OpenAIRE | ✅ | 🟡 Conditional | ❌ | ❌ | 🟡 Optional | Can feed fallback downloads when records include open links |
+| Unpaywall | 🟡 Conditional | 🟡 Conditional | ❌ | ❌ | ✅ Email | DOI-only lookup; downloads work when an OA PDF is found |
+| IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | Cryptography papers |
+| Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | DOI-based paper lookup and PDF retrieval |
+| ScienceDirect | ✅ | ❌ | ❌ | ✅ | ✅ Required | Elsevier metadata and abstracts |
+| Springer Nature | ✅ | 🟡 Conditional | ❌ | ❌ | ✅ Required | Open-access records can be downloaded; metadata API requires a key |
+| Wiley | ❌ Keyword search | ✅ | ✅ | ❌ | ✅ Required | TDM API, DOI-based PDF download only |
+| Scopus | ✅ | ❌ | ❌ | ✅ | ✅ Required | Abstract and citation database |
 
 Notes:
 
+- In capability columns, `✅` means directly supported, `❌` means unsupported, and `🟡 Conditional` means support depends on record content or provider constraints, such as DOI-only lookup, available PDF/OA links, or open-access-only downloads.
+- In the API Key column, `❌` means no configuration is needed, `🟡 Optional` means configuration improves limits or stability, and `✅ Required` means configuration is required. Unpaywall requires an email rather than a traditional API key.
 - Wiley does not support keyword search through the Wiley TDM API. Use `search_crossref` to find Wiley articles and then use `download_paper` with `platform=wiley` and the DOI.
 - `platform=all` uses a curated fan-out across the more stable free/open/API sources: Crossref, OpenAlex, PubMed, PMC, Europe PMC, arXiv, bioRxiv, medRxiv, IACR, CORE, and OpenAIRE. It intentionally excludes Google Scholar, Sci-Hub, paid-key sources, DOI-only Unpaywall, and rate-limit-prone Semantic Scholar unless requested explicitly.
 - `--sources` accepts a comma-separated source list, for example `--sources crossref,openalex,pmc`.
-- Google Scholar and Sci-Hub may have legal, contractual, or rate-limit constraints. See [Compliance](#compliance).
-
-## Absorbed Upstream Ideas
-
-The useful upstream changes have been brought into this CLI where they fit a standalone command-line workflow. The goal is not to mirror every integration; it is to improve recall and PDF discovery while keeping defaults stable and legally safer.
-
-| Capability | Current CLI status | Notes |
-| --- | --- | --- |
-| Broader open metadata | Implemented | `search_openalex`; also available through `--sources openalex` and curated `platform=all` |
-| DOI-based open-access resolution | Implemented | `search_unpaywall` and `download_with_fallback`; requires `PAPER_SEARCH_UNPAYWALL_EMAIL` or `UNPAYWALL_EMAIL` |
-| Biomedical open full text | Implemented | `search_pmc` and `search_europepmc`; both can participate in fallback downloads |
-| Repository-based PDF discovery | Implemented first batch | `search_core` and `search_openaire`; CORE works better with an API key, OpenAIRE is treated as discovery metadata |
-| Multi-source fan-out and dedupe | Implemented | `--sources crossref,openalex,pmc` or `platform=all`; duplicates are merged by DOI, then title+authors |
-| Open-access fallback download | Implemented | `download_with_fallback` tries native download, discovered PDF URLs, PMC/Europe PMC/CORE/OpenAIRE, Unpaywall, then optional Sci-Hub |
-
-Still treated as candidates:
-
-| Candidate | Suggested status | Reason |
-| --- | --- | --- |
-| Zenodo, HAL, DOAJ, dblp | Recommended later | Useful open metadata/repository coverage, but lower immediate value than OpenAlex/PMC/Europe PMC |
-| SSRN, CiteSeerX, BASE | Optional or experimental | Useful in some domains, but access and response formats are less predictable |
-| IEEE, ACM | Optional paid-key connectors | Should stay isolated behind explicit API keys or institutional access |
-| Semantic Scholar in default fan-out | Explicit only | The source is useful, but the free tier can return HTTP 429 quickly; call it directly or include it in `--sources` when needed |
-| Google Scholar automation | Best-effort only | Existing scrape-based source remains explicit; it is not used by curated `platform=all` |
-| Sci-Hub fallback | Explicit opt-in only | Never used silently; `download_with_fallback` requires `useSciHub=true` |
-
-## Quick Start
-
-### Requirements
-
-- Node.js >= 18.0.0
-- npm
-
-### Install From GitHub
-
-One-command global install:
-
-```bash
-npm install -g github:dr-dumpling/paper-search-cli
-paper-search setup
-paper-search status --pretty
-```
-
-The GitHub install path runs the package `prepare` script, so it builds `dist/cli.js` during install. The package also includes a post-install note for environments that show npm lifecycle output. If npm hides that output, the first `paper-search status --pretty` run still points users to `paper-search setup`.
-
-Local development install:
-
-```bash
-git clone https://github.com/dr-dumpling/paper-search-cli.git
-cd paper-search-cli
-npm install
-npm run build
-```
-
-### Run Directly
-
-```bash
-node dist/cli.js status --pretty
-node dist/cli.js search "large language model evaluation" --platform crossref --max-results 5 --pretty
-```
-
-### Register The `paper-search` Command
-
-```bash
-npm link
-paper-search status --pretty
-paper-search search "osteoarthritis occupational exposure" --platform pubmed --max-results 3 --pretty
-```
-
-`npm link` creates a local command entry for this checkout. Re-run `npm run build` after code changes.
+- Semantic Scholar body-snippet search is available through `search_semantic_snippets`, is useful for finding methodological details, and requires `SEMANTIC_SCHOLAR_API_KEY`.
 
 ## Configuration
 
@@ -431,7 +376,7 @@ paper-search run search_pubmed --json-args '{"query":"COVID-19 vaccine efficacy"
 
 ### Open Metadata And Full-Text Sources
 
-Use these for the upstream-inspired open discovery path:
+Use these commands for open metadata search, open full-text discovery, and fallback PDF lookup:
 
 ```bash
 paper-search run search_openalex --arg query="machine learning" --arg maxResults=3 --pretty
@@ -479,7 +424,7 @@ paper-search run search_semantic_scholar --json-args '{"query":"graph neural net
 
 ### `search_semantic_snippets`
 
-Search Semantic Scholar's Open Access snippet index. This searches excerpts from titles, abstracts, and body text; only `snippet.snippetKind="body"` should be treated as body-text evidence. Requires `SEMANTIC_SCHOLAR_API_KEY`.
+Search Semantic Scholar's Open Access snippet index for body-text snippets that can help locate methodological details. Requires `SEMANTIC_SCHOLAR_API_KEY`.
 
 ```bash
 paper-search run search_semantic_snippets --arg query="CMAverse mediation bootstrap confidence interval" --arg limit=5 --arg fieldsOfStudy=Medicine --pretty
@@ -588,82 +533,6 @@ paper-search run get_platform_status --pretty
 paper-search run get_platform_status --arg validate=true --pretty
 ```
 
-## Development
-
-### Build
-
-```bash
-npm run build
-```
-
-### Test
-
-```bash
-npm test -- --runInBand
-```
-
-### Type Check
-
-```bash
-npm exec tsc -- --noEmit
-```
-
-### Security Audit
-
-```bash
-npm audit --omit=dev
-```
-
-### Packaging And Publishing
-
-The package is prepared for one-command installation:
-
-- `build` cleans `dist/` before compiling, so stale build files are not packaged.
-- `prepare` builds `dist/cli.js` for GitHub installs such as `npm install -g github:dr-dumpling/paper-search-cli`, and for `npm pack`.
-- `postinstall` provides the API key setup command when npm lifecycle output is visible; it does not ask for secrets during npm install.
-- `prepublishOnly` runs tests and build before `npm publish`.
-- `files` limits the published package to `dist/`, the postinstall script, docs, license, and `.env.example`.
-
-Release checklist:
-
-```bash
-npm test -- --runInBand
-npm run build
-npm pack --dry-run
-npm publish --access public
-```
-
-After npm publication, users can install with:
-
-```bash
-npm install -g paper-search-cli
-paper-search setup
-paper-search status --pretty
-```
-
-### Project Layout
-
-```text
-src/cli.ts               CLI entrypoint
-src/core/                Tool registry, schemas, dispatcher, searcher initialization
-src/platforms/           Platform-specific search/download implementations
-src/models/              Unified paper model
-src/services/            Shared higher-level services
-src/utils/               Logging, rate limiting, quota, cache, security, PDF helpers
-tests/                   Unit and integration tests
-```
-
-### Adding A New Platform
-
-1. Create a new searcher in `src/platforms/`.
-2. Extend `PaperSource` and implement `search`, `downloadPdf`, `readPaper`, and `getCapabilities`.
-3. Register the searcher in `src/core/searchers.ts`.
-4. Add a schema in `src/core/schemas.ts`.
-5. Add a tool definition in `src/core/tools.ts`.
-6. Add dispatch handling in `src/core/handleToolCall.ts`.
-7. Add tests under `tests/platforms/`.
-8. Run build, tests, and audit.
-
 ## Troubleshooting
 
 ### Command Not Found
@@ -707,14 +576,13 @@ Reduce `--max-results`, avoid repeated live validation, and prefer sources with 
 
 Use default JSON output and parse stdout. Human diagnostics are written to stderr.
 
-## Compliance
+## Usage Boundaries
 
-This project includes integrations that may have legal, contractual, or ethical constraints. You are responsible for ensuring usage complies with applicable law, institutional policy, and third-party terms.
+Some sources may be subject to platform terms, institutional subscriptions, or local law. Use restricted integrations only when you have the appropriate access rights and permission.
 
-- Sci-Hub may provide access to copyrighted works without authorization in many jurisdictions. Use only when you have legal access rights.
-- Google Scholar automation may violate Google terms or trigger blocking. Prefer official APIs or open metadata sources for compliance-sensitive work.
-- `platform=all` avoids Google Scholar, Sci-Hub, paid-key sources, DOI-only Unpaywall, and rate-limit-prone Semantic Scholar by default. Request those sources explicitly when you choose to use them.
-- Provider API keys may be subject to institutional terms. Do not share or commit credentials.
+## Project Origin
+
+This project is a standalone CLI adaptation inspired by [openags/paper-search-mcp](https://github.com/openags/paper-search-mcp). It keeps the paper-search workflow focused on a one-command terminal tool and does not require an MCP runtime.
 
 ## License
 

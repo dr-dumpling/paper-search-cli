@@ -4,7 +4,7 @@
 
 Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学术来源检索论文、核验元数据和下载 PDF。它面向终端直接使用、自动化脚本和 agent 工作流，提供稳定命令入口和可预测的 JSON 输出。
 
-它继承了之前 Paper Search 实现中的平台覆盖、统一数据模型、安全处理和详细功能说明，但运行方式已经收口为普通 CLI：每次调用执行一次命令，执行完即退出，不需要配置、启动或维护长期后台服务。
+它继承了之前 Paper Search 实现中的平台覆盖、统一数据模型和详细功能说明，但运行方式已经收口为普通 CLI：每次调用执行一次命令，执行完即退出，不需要配置、启动或维护长期后台服务。
 
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
@@ -12,17 +12,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 
-## 当前状态
-
-| 项目 | 状态 |
-| --- | --- |
-| 运行方式 | 独立 Node.js CLI |
-| 主命令 | `paper-search` |
-| 当前平台数量 | 已实现 20 个来源/平台 |
-| 输出方式 | 默认 JSON，可选文本输出 |
-| 配置方式 | shell 环境变量/当前目录 `.env`，以及 `~/.config/paper-search-cli/config.json` 用户级配置 |
-| 当前推荐默认源 | `crossref` + `openalex` 用于广泛元数据，`pubmed` + `pmc`/`europepmc` 用于生物医学检索，`arxiv` 用于预印本 |
-| 已吸纳的上游思路 | `--sources` 多源检索、DOI/标题去重、开放获取优先 `download_with_fallback` |
+[快速开始](#快速开始) · [配置](#配置) · [支持的平台](#支持的平台) · [命令](#命令) · [工具参考](#工具参考) · [排障](#排障)
 
 ## 设计目标
 
@@ -39,112 +29,67 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 - **JSON 优先输出**：stdout 默认输出 JSON，stderr 保留给人类可读日志和错误。
 - **统一论文数据模型**：标准化标题、作者、DOI、来源、日期、摘要、PDF 链接、引用数和平台扩展字段。
 - **多源检索与去重**：用 `--sources crossref,openalex,pmc` 选择来源，或用整理过的 `platform=all`，再按 DOI、标题+作者合并重复结果。
+- **Semantic Scholar 正文片段检索**：`search_semantic_snippets` 用于检索 Semantic Scholar Open Access snippet 索引中的正文片段，适合查找论文中的方法学细节。该功能需要 `SEMANTIC_SCHOLAR_API_KEY`。
 - **开放获取优先下载链**：`download_with_fallback` 会先尝试原生下载、结果里的 PDF URL、PMC/Europe PMC/CORE/OpenAIRE、Unpaywall DOI 解析，只有显式开启时才把 Sci-Hub 作为最后兜底。
-- **安全优先**：DOI 校验、查询清理、敏感信息脱敏、结构化错误处理。
 - **限速与重试**：内置平台级限速和可重试 API 错误处理。
 - **PDF 下载支持**：支持 arXiv、bioRxiv、medRxiv、Semantic Scholar、IACR、Sci-Hub、Springer 开放获取、Wiley DOI 下载等路径。
 - **适合 agent 调用**：`tools`、`status`、`search`、`download`、`run` 覆盖简单检索和精确工具调用。
+
+## 快速开始
+
+### 安装
+
+要求 Node.js >= 18.0.0 和 npm。
+
+```bash
+npm install -g github:dr-dumpling/paper-search-cli
+paper-search setup
+paper-search search "machine learning" --platform crossref --max-results 3 --pretty
+```
+
+GitHub 安装会运行 package 的 `prepare` 脚本并自动构建 CLI。若 npm 隐藏安装阶段提示，首次运行 `paper-search status --pretty` 仍会提示配置入口。
+
+### 常用检查
+
+```bash
+paper-search status --pretty
+paper-search tools --pretty
+paper-search config doctor --pretty
+```
 
 ## 支持的平台
 
 | 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Crossref | 支持 | 不支持 | 不支持 | 支持 | 不需要 | 默认搜索平台，广泛元数据覆盖 |
-| OpenAlex | 支持 | 通过回退 URL | 不支持 | 支持 | 不需要 | 广泛免费元数据、概念标签、开放获取位置发现 |
-| arXiv | 支持 | 支持 | 支持 | 不支持 | 不需要 | 物理、计算机、数学等预印本 |
-| Web of Science | 支持 | 不支持 | 不支持 | 支持 | 必需 | 引文数据库、日期排序、年份范围 |
-| PubMed | 支持 | 不支持 | 不支持 | 不支持 | 可选 | NCBI E-utilities 生物医学文献 |
-| PubMed Central | 支持 | 支持 | 支持 | 不支持 | 不需要 | 生物医学开放全文和 PMC PDF |
-| Europe PMC | 支持 | 支持 | 支持 | 不支持 | 不需要 | 生物医学元数据和开放全文链接 |
-| Google Scholar | 支持 | 不支持 | 不支持 | 支持 | 不需要 | 广泛学术发现，基于页面解析 |
-| bioRxiv | 支持 | 支持 | 支持 | 不支持 | 不需要 | 生物学预印本 |
-| medRxiv | 支持 | 支持 | 支持 | 不支持 | 不需要 | 医学预印本 |
-| Semantic Scholar | 支持 | 支持 | 不支持 | 支持 | 可选 | AI 语义检索 |
-| CORE | 支持 | 取决于记录 | 取决于记录 | 不支持 | 可选 | 开放仓储元数据和 PDF 候选 |
-| OpenAIRE | 支持 | 通过回退 URL | 不支持 | 不支持 | 可选 | 开放仓储发现源 |
-| Unpaywall | 仅 DOI | 通过回退 URL | 不支持 | 不支持 | 需要 email | 基于 DOI 的开放获取解析 |
-| IACR ePrint | 支持 | 支持 | 支持 | 不支持 | 不需要 | 密码学论文 |
-| Sci-Hub | 支持 | 支持 | 不支持 | 不支持 | 不需要 | 基于 DOI 查询和下载 |
-| ScienceDirect | 支持 | 不支持 | 不支持 | 支持 | 必需 | Elsevier 元数据和摘要 |
-| Springer Nature | 支持 | 仅开放获取 | 不支持 | 不支持 | 必需 | Metadata API 和 OpenAccess API |
-| Wiley | 不支持关键词搜索 | 支持 | 支持 | 不支持 | 必需 | TDM API，仅支持 DOI 下载 PDF |
-| Scopus | 支持 | 不支持 | 不支持 | 支持 | 必需 | 摘要和引文数据库 |
+| Crossref | ✅ | ❌ | ❌ | ✅ | ❌ | 默认搜索平台，广泛元数据覆盖 |
+| OpenAlex | ✅ | 🟡 条件支持 | ❌ | ✅ | ❌ | 广泛免费元数据；记录含开放链接时可用于回退下载 |
+| arXiv | ✅ | ✅ | ✅ | ❌ | ❌ | 物理、计算机、数学等预印本 |
+| Web of Science | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | 引文数据库、日期排序、年份范围 |
+| PubMed | ✅ | ❌ | ❌ | ❌ | 🟡 可选 | NCBI E-utilities 生物医学文献 |
+| PubMed Central | ✅ | ✅ | ✅ | ❌ | ❌ | 生物医学开放全文和 PMC PDF |
+| Europe PMC | ✅ | ✅ | ✅ | ❌ | ❌ | 生物医学元数据和开放全文链接 |
+| Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | 广泛学术发现，基于页面解析 |
+| bioRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | 生物学预印本 |
+| medRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | 医学预印本 |
+| Semantic Scholar | ✅ | ✅ | ✅ 正文片段 | ✅ | 🟡 可选* | AI 语义检索 + OA 正文片段 |
+| CORE | ✅ | 🟡 条件支持 | 🟡 条件支持 | ❌ | 🟡 可选 | 记录含 PDF 或全文链接时可下载 |
+| OpenAIRE | ✅ | 🟡 条件支持 | ❌ | ❌ | 🟡 可选 | 记录含开放链接时可用于回退下载 |
+| Unpaywall | 🟡 条件支持 | 🟡 条件支持 | ❌ | ❌ | ✅ 需要 email | 仅支持 DOI 查询；发现 OA PDF 时可下载 |
+| IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | 密码学论文 |
+| Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | 基于 DOI 查询和下载 |
+| ScienceDirect | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | Elsevier 元数据和摘要 |
+| Springer Nature | ✅ | 🟡 条件支持 | ❌ | ❌ | ✅ 必需 | 开放获取记录可下载；元数据 API 需要 key |
+| Wiley | ❌ 关键词搜索 | ✅ | ✅ | ❌ | ✅ 必需 | TDM API，仅支持 DOI 下载 PDF |
+| Scopus | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | 摘要和引文数据库 |
 
 说明：
 
+- 能力列中，`✅` 表示直接支持，`❌` 表示不支持，`🟡 条件支持` 表示只在满足条件时可用，例如记录里含 PDF/开放获取链接、只能按 DOI 查询，或只能下载开放获取记录。
+- API Key 列中，`❌` 表示不需要配置，`🟡 可选` 表示不配置也能用但限额或稳定性较弱，`✅ 必需` 表示必须配置。Unpaywall 需要的是 email，不是传统 API key。
 - Wiley TDM API 不支持关键词搜索。应先用 `search_crossref` 找到 Wiley 文章 DOI，再用 `download_paper` 配合 `platform=wiley` 下载。
 - `platform=all` 使用整理过、相对稳定的免费/开放/API 来源：Crossref、OpenAlex、PubMed、PMC、Europe PMC、arXiv、bioRxiv、medRxiv、IACR、CORE、OpenAIRE。它默认不包含 Google Scholar、Sci-Hub、付费 key 平台、DOI-only 的 Unpaywall，以及容易触发限流的 Semantic Scholar。
 - `--sources` 接受逗号分隔来源，例如 `--sources crossref,openalex,pmc`。
-- Google Scholar 和 Sci-Hub 可能存在法律、服务条款或限流风险，见 [合规说明](#合规说明)。
-
-## 已吸纳的上游思路
-
-上游实现里真正适合独立 CLI 的部分已经迁移进来。这里的目标不是照搬所有来源，而是在保持默认行为稳定、合规风险更低的前提下，提高召回和开放 PDF 发现能力。
-
-| 能力 | 当前 CLI 状态 | 说明 |
-| --- | --- | --- |
-| 更广的开放元数据 | 已实现 | `search_openalex`，也可通过 `--sources openalex` 和整理过的 `platform=all` 使用 |
-| DOI 开放获取解析 | 已实现 | `search_unpaywall` 和 `download_with_fallback`；需要 `PAPER_SEARCH_UNPAYWALL_EMAIL` 或 `UNPAYWALL_EMAIL` |
-| 生物医学开放全文 | 已实现 | `search_pmc` 和 `search_europepmc`，可参与回退下载链 |
-| 仓储型 PDF 发现 | 已实现第一批 | `search_core` 和 `search_openaire`；CORE 配 key 更稳定，OpenAIRE 作为发现型元数据来源 |
-| 多来源并发检索与去重 | 已实现 | `--sources crossref,openalex,pmc` 或 `platform=all`；按 DOI、标题+作者去重 |
-| 开放获取优先下载链 | 已实现 | `download_with_fallback` 依次尝试原生下载、结果 PDF URL、PMC/Europe PMC/CORE/OpenAIRE、Unpaywall，最后才是显式开启的 Sci-Hub |
-
-仍作为候选的能力：
-
-| 候选项 | 建议状态 | 原因 |
-| --- | --- | --- |
-| Zenodo、HAL、DOAJ、dblp | 后续推荐纳入 | 有开放元数据/仓储价值，但优先级低于 OpenAlex/PMC/Europe PMC |
-| SSRN、CiteSeerX、BASE | 可选或实验 | 特定领域有用，但访问稳定性和返回格式不够统一 |
-| IEEE、ACM | 可选付费 key 连接器 | 应隔离在显式 API key 或机构访问之后 |
-| Semantic Scholar 默认 fan-out | 仅显式使用 | 该来源有用，但免费额度容易返回 HTTP 429；需要时直接调用或写入 `--sources` |
-| Google Scholar 自动化 | 仅 best-effort | 现有页面解析来源保留为显式调用，不进入整理过的 `platform=all` |
-| Sci-Hub 回退 | 仅显式 opt-in | 不会静默使用；`download_with_fallback` 必须设置 `useSciHub=true` |
-
-## 快速开始
-
-### 系统要求
-
-- Node.js >= 18.0.0
-- npm
-
-### 从 GitHub 安装
-
-全局一键安装：
-
-```bash
-npm install -g github:dr-dumpling/paper-search-cli
-paper-search setup
-paper-search status --pretty
-```
-
-GitHub 安装会运行 package 的 `prepare` 脚本，因此安装过程中会自动构建 `dist/cli.js`。package 也包含安装后提示；如果 npm 当前配置隐藏生命周期脚本输出，第一次运行 `paper-search status --pretty` 仍会提示用户使用 `paper-search setup` 配置 API key。
-
-本地开发安装：
-
-```bash
-git clone https://github.com/dr-dumpling/paper-search-cli.git
-cd paper-search-cli
-npm install
-npm run build
-```
-
-### 直接运行
-
-```bash
-node dist/cli.js status --pretty
-node dist/cli.js search "large language model evaluation" --platform crossref --max-results 5 --pretty
-```
-
-### 注册为本机命令
-
-```bash
-npm link
-paper-search status --pretty
-paper-search search "osteoarthritis occupational exposure" --platform pubmed --max-results 3 --pretty
-```
-
-`npm link` 会把当前 checkout 注册成本机命令。代码变更后重新运行 `npm run build`。
+- Semantic Scholar 正文片段检索通过 `search_semantic_snippets` 提供，适合查找方法学细节，需要配置 `SEMANTIC_SCHOLAR_API_KEY`。
 
 ## 配置
 
@@ -431,7 +376,7 @@ paper-search run search_pubmed --json-args '{"query":"COVID-19 vaccine efficacy"
 
 ### 开放元数据与全文来源
 
-这些工具对应本轮吸纳的开放发现链：
+这些命令用于开放元数据检索、开放全文发现和 PDF 回退查找：
 
 ```bash
 paper-search run search_openalex --arg query="machine learning" --arg maxResults=3 --pretty
@@ -479,7 +424,7 @@ paper-search run search_semantic_scholar --json-args '{"query":"graph neural net
 
 ### `search_semantic_snippets`
 
-搜索 Semantic Scholar 的 Open Access snippet 索引。它检索题名、摘要和正文片段；只有 `snippet.snippetKind="body"` 才能当作正文证据。需要 `SEMANTIC_SCHOLAR_API_KEY`。
+搜索 Semantic Scholar 的 Open Access snippet 索引，用于定位论文正文中的方法学细节片段。需要 `SEMANTIC_SCHOLAR_API_KEY`。
 
 ```bash
 paper-search run search_semantic_snippets --arg query="CMAverse mediation bootstrap confidence interval" --arg limit=5 --arg fieldsOfStudy=Medicine --pretty
@@ -588,82 +533,6 @@ paper-search run get_platform_status --pretty
 paper-search run get_platform_status --arg validate=true --pretty
 ```
 
-## 开发
-
-### 构建
-
-```bash
-npm run build
-```
-
-### 测试
-
-```bash
-npm test -- --runInBand
-```
-
-### 类型检查
-
-```bash
-npm exec tsc -- --noEmit
-```
-
-### 安全审计
-
-```bash
-npm audit --omit=dev
-```
-
-### 打包与发布
-
-当前 package 已支持一键安装：
-
-- `build` 会先清理 `dist/` 再编译，避免过期构建产物进入发布包。
-- `prepare` 为 GitHub 安装构建 `dist/cli.js`，例如 `npm install -g github:dr-dumpling/paper-search-cli`，也会用于 `npm pack`。
-- `postinstall` 在 npm 生命周期输出可见时打印 API key 配置入口；安装阶段不直接索要密钥。
-- `prepublishOnly` 在 `npm publish` 前运行测试和构建。
-- `files` 限制发布包只包含 `dist/`、postinstall 脚本、文档、许可证和 `.env.example`。
-
-发布检查清单：
-
-```bash
-npm test -- --runInBand
-npm run build
-npm pack --dry-run
-npm publish --access public
-```
-
-正式发布到 npm 后，用户可以这样安装：
-
-```bash
-npm install -g paper-search-cli
-paper-search setup
-paper-search status --pretty
-```
-
-### 目录结构
-
-```text
-src/cli.ts               CLI 入口
-src/core/                工具注册、参数 schema、调度器、搜索器初始化
-src/platforms/           各平台检索和下载实现
-src/models/              统一论文数据模型
-src/services/            共享上层服务
-src/utils/               日志、限速、配额、缓存、安全、PDF 工具
-tests/                   单元测试和集成测试
-```
-
-### 新增平台
-
-1. 在 `src/platforms/` 创建新的 searcher。
-2. 继承 `PaperSource`，实现 `search`、`downloadPdf`、`readPaper` 和 `getCapabilities`。
-3. 在 `src/core/searchers.ts` 注册 searcher。
-4. 在 `src/core/schemas.ts` 添加参数 schema。
-5. 在 `src/core/tools.ts` 添加工具定义。
-6. 在 `src/core/handleToolCall.ts` 添加调度逻辑。
-7. 在 `tests/platforms/` 添加测试。
-8. 运行构建、测试和审计。
-
 ## 排障
 
 ### 找不到命令
@@ -707,14 +576,13 @@ paper-search config doctor --pretty
 
 默认解析 stdout 即可。人类可读诊断会写入 stderr。
 
-## 合规说明
+## 使用边界
 
-本项目包含的部分集成可能涉及法律、授权或服务条款限制。你需要确保使用方式符合当地法律、机构政策和第三方平台条款。
+部分来源可能受平台条款、机构订阅或当地法律限制。请只在你具备相应访问权限、并符合所在机构和平台规则的前提下使用相关功能。
 
-- Sci-Hub 在许多司法辖区可能涉及未经授权访问受版权保护内容。请仅在你有合法访问权的情况下使用。
-- Google Scholar 自动化可能违反平台条款或触发封禁/限流。合规敏感任务应优先使用官方 API 或开放元数据来源。
-- `platform=all` 默认避开 Google Scholar、Sci-Hub、付费 key 平台、DOI-only 的 Unpaywall 和容易限流的 Semantic Scholar。需要使用这些来源时应显式指定。
-- 平台 API key 可能受机构条款约束。不要分享或提交凭证。
+## 项目来源
+
+本项目是参考 [openags/paper-search-mcp](https://github.com/openags/paper-search-mcp) 的独立 CLI 改写版本。当前定位是单命令终端工具，不需要 MCP 运行时。
 
 ## License
 
