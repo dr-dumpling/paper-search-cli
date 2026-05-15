@@ -299,13 +299,13 @@ export function validateQueryComplexity(query, options = {}) {
  * Create a timeout wrapper for promises
  */
 export function withTimeout(promise, ms, message) {
+    let timer;
     const timeout = new Promise((_, reject) => {
-        const timer = setTimeout(() => {
-            clearTimeout(timer);
+        timer = setTimeout(() => {
             reject(new Error(message || `Operation timed out after ${ms}ms`));
         }, ms);
     });
-    return Promise.race([promise, timeout]);
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 /**
  * Generate a correlation ID for request tracking

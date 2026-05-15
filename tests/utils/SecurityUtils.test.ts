@@ -125,7 +125,7 @@ describe('SecurityUtils', () => {
     });
 
     it('should reject on timeout', async () => {
-      const slowPromise = new Promise(resolve => setTimeout(resolve, 2000));
+      const slowPromise = new Promise(() => undefined);
       await expect(withTimeout(slowPromise, 100, 'Timeout!')).rejects.toThrow('Timeout!');
     });
 
