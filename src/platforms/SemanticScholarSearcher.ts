@@ -71,6 +71,38 @@ interface SemanticPaper {
   url?: string;
 }
 
+interface SemanticSnippetSearchOptions {
+  query: string;
+  limit?: number;
+  year?: string;
+  fieldsOfStudy?: string[] | string;
+  paperIds?: string[] | string;
+  authors?: string[] | string;
+  venue?: string[] | string;
+  minCitationCount?: number;
+  publicationDateOrYear?: string;
+  fields?: string[] | string;
+}
+
+export interface SemanticSnippetResult {
+  score: number | null;
+  paper: {
+    corpusId: string;
+    title: string;
+    authors: string[];
+    openAccessInfo: Record<string, unknown>;
+    url: string;
+  };
+  snippet: {
+    text: string;
+    snippetKind: string;
+    section: string;
+    snippetOffset: Record<string, unknown>;
+    annotations: Record<string, unknown>;
+  };
+  text: string;
+}
+
 export class SemanticScholarSearcher extends PaperSource {
   private readonly rateLimiter: RateLimiter;
   private readonly cache: RequestCache<Paper[]>;
@@ -255,6 +287,62 @@ export class SemanticScholarSearcher extends PaperSource {
     }
   }
 
+  async searchSnippets(options: SemanticSnippetSearchOptions): Promise<SemanticSnippetResult[]> {
+    if (!this.apiKey) {
+      throw new Error('search_semantic_snippets requires SEMANTIC_SCHOLAR_API_KEY.');
+    }
+
+    await this.rateLimiter.waitForPermission();
+
+    try {
+      const params: Record<string, any> = {
+        query: options.query,
+        limit: Math.min(options.limit || 5, 1000)
+      };
+
+      const paperIds = this.listParam(options.paperIds);
+      const authors = this.listParam(options.authors);
+      const venue = this.listParam(options.venue);
+      const fieldsOfStudy = this.listParam(options.fieldsOfStudy);
+      const fields = this.listParam(options.fields);
+
+      if (paperIds.length > 0) params.paperIds = paperIds.join(',');
+      if (authors.length > 0) params.authors = authors.join(',');
+      if (venue.length > 0) params.venue = venue.join(',');
+      if (fieldsOfStudy.length > 0) params.fieldsOfStudy = fieldsOfStudy.join(',');
+      if (fields.length > 0) params.fields = fields.join(',');
+      if (options.year) params.year = options.year;
+      if (options.minCitationCount) params.minCitationCount = options.minCitationCount;
+      if (options.publicationDateOrYear) params.publicationDateOrYear = options.publicationDateOrYear;
+
+      const url = `${this.baseApiUrl}/snippet/search`;
+      const response = await ErrorHandler.retryWithBackoff(
+        () =>
+          axios.get(url, {
+            params,
+            headers: {
+              'User-Agent': USER_AGENT,
+              Accept: 'application/json',
+              'x-api-key': this.apiKey
+            },
+            timeout: TIMEOUTS.DEFAULT,
+            maxRedirects: 5,
+            validateStatus: status => status < 500
+          }),
+        { context: 'Semantic Scholar snippet search' }
+      );
+
+      if (response.status >= 400) {
+        this.handleHttpError({ response, config: response.config }, 'snippet search');
+      }
+
+      const data: any[] = Array.isArray(response.data?.data) ? response.data.data : [];
+      return data.map(item => this.parseSnippet(item));
+    } catch (error) {
+      this.handleHttpError(error, 'snippet search');
+    }
+  }
+
   /**
    * 下载PDF文件
    */
@@ -419,6 +507,40 @@ export class SemanticScholarSearcher extends PaperSource {
       logDebug('Error parsing Semantic Scholar paper:', error);
       return null;
     }
+  }
+
+  private parseSnippet(item: any): SemanticSnippetResult {
+    const paper = item?.paper || {};
+    const snippet = item?.snippet || {};
+    const corpusId = paper.corpusId ?? paper.corpus_id ?? '';
+
+    return {
+      score: typeof item?.score === 'number' ? item.score : null,
+      paper: {
+        corpusId: corpusId ? String(corpusId) : '',
+        title: this.cleanText(paper.title || ''),
+        authors: this.listParam(paper.authors),
+        openAccessInfo: paper.openAccessInfo || {},
+        url: corpusId ? `https://www.semanticscholar.org/paper/CorpusId:${corpusId}` : ''
+      },
+      snippet: {
+        text: this.cleanText(snippet.text || item?.text || ''),
+        snippetKind: snippet.snippetKind || snippet.kind || '',
+        section: snippet.section || '',
+        snippetOffset: snippet.snippetOffset || {},
+        annotations: snippet.annotations || {}
+      },
+      text: this.cleanText(snippet.text || item?.text || '')
+    };
+  }
+
+  private listParam(value?: string[] | string): string[] {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+    return String(value)
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
   }
 
   /**

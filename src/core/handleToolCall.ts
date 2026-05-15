@@ -4,6 +4,8 @@ import { parseToolArgs } from './schemas.js';
 import { PaperFactory, type Paper } from '../models/Paper.js';
 import { PaperSource, type SearchOptions } from '../platforms/PaperSource.js';
 import { logDebug } from '../utils/Logger.js';
+import { searchMultipleSources } from '../services/MultiSourceSearchService.js';
+import { downloadWithFallback } from '../services/OpenAccessFallbackService.js';
 
 function jsonTextResponse(text: string) {
   return {
@@ -29,6 +31,7 @@ export async function handleToolCall(
       const {
         query,
         platform,
+        sources,
         maxResults,
         year,
         author,
@@ -56,18 +59,11 @@ export async function handleToolCall(
       };
 
       if (platform === 'all') {
-        try {
-          const platformResults = await searchers.crossref.search(query, searchOptions);
-          results.push(...platformResults.map((paper: Paper) => PaperFactory.toDict(paper)));
-        } catch (error) {
-          logDebug('Error searching crossref:', error);
-          try {
-            const platformResults = await searchers.arxiv.search(query, searchOptions);
-            results.push(...platformResults.map((paper: Paper) => PaperFactory.toDict(paper)));
-          } catch (fallbackError) {
-            logDebug('Error with arxiv fallback:', fallbackError);
-          }
-        }
+        const result = await searchMultipleSources(searchers, query, sources || 'all', searchOptions);
+        return jsonTextResponse(`Found ${result.total} papers across ${result.sources_used.length} source(s).\n\n${JSON.stringify(result, null, 2)}`);
+      } else if (sources) {
+        const result = await searchMultipleSources(searchers, query, sources, searchOptions);
+        return jsonTextResponse(`Found ${result.total} papers across ${result.sources_used.length} source(s).\n\n${JSON.stringify(result, null, 2)}`);
       } else {
         const searcher = (searchers as any)[platform];
         if (!searcher) {
@@ -207,6 +203,19 @@ export async function handleToolCall(
       );
     }
 
+    case 'search_semantic_snippets': {
+      const results = await searchers.semantic.searchSnippets(args);
+      const bodyCount = results.filter(result => result.snippet.snippetKind === 'body').length;
+
+      return jsonTextResponse(
+        `Found ${results.length} Semantic Scholar snippet(s), including ${bodyCount} body snippet(s).\n\n${JSON.stringify(
+          results,
+          null,
+          2
+        )}`
+      );
+    }
+
     case 'search_iacr': {
       const { query, maxResults, fetchDetails } = args;
       const results = await searchers.iacr.search(query, { maxResults, fetchDetails });
@@ -235,6 +244,11 @@ export async function handleToolCall(
 
       const filePath = await searcher.downloadPdf(paperId, { savePath: resolvedSavePath });
       return jsonTextResponse(`PDF downloaded successfully to: ${filePath}`);
+    }
+
+    case 'download_with_fallback': {
+      const result = await downloadWithFallback(searchers, args);
+      return jsonTextResponse(`Download with fallback ${result.status}.\n\n${JSON.stringify(result, null, 2)}`);
     }
 
     case 'search_google_scholar': {
@@ -417,6 +431,84 @@ export async function handleToolCall(
 
       return jsonTextResponse(
         `Found ${results.length} Crossref papers.\n\n${JSON.stringify(
+          results.map((paper: Paper) => PaperFactory.toDict(paper)),
+          null,
+          2
+        )}`
+      );
+    }
+
+    case 'search_openalex': {
+      const { query, maxResults, year } = args;
+      const results = await searchers.openalex.search(query, { maxResults, year });
+
+      return jsonTextResponse(
+        `Found ${results.length} OpenAlex papers.\n\n${JSON.stringify(
+          results.map((paper: Paper) => PaperFactory.toDict(paper)),
+          null,
+          2
+        )}`
+      );
+    }
+
+    case 'search_unpaywall': {
+      const { query, maxResults } = args;
+      const results = await searchers.unpaywall.search(query, { maxResults });
+
+      return jsonTextResponse(
+        `Found ${results.length} Unpaywall record(s).\n\n${JSON.stringify(
+          results.map((paper: Paper) => PaperFactory.toDict(paper)),
+          null,
+          2
+        )}`
+      );
+    }
+
+    case 'search_pmc': {
+      const { query, maxResults, year } = args;
+      const results = await searchers.pmc.search(query, { maxResults, year });
+
+      return jsonTextResponse(
+        `Found ${results.length} PMC papers.\n\n${JSON.stringify(
+          results.map((paper: Paper) => PaperFactory.toDict(paper)),
+          null,
+          2
+        )}`
+      );
+    }
+
+    case 'search_europepmc': {
+      const { query, maxResults, year } = args;
+      const results = await searchers.europepmc.search(query, { maxResults, year });
+
+      return jsonTextResponse(
+        `Found ${results.length} Europe PMC papers.\n\n${JSON.stringify(
+          results.map((paper: Paper) => PaperFactory.toDict(paper)),
+          null,
+          2
+        )}`
+      );
+    }
+
+    case 'search_core': {
+      const { query, maxResults, year } = args;
+      const results = await searchers.core.search(query, { maxResults, year });
+
+      return jsonTextResponse(
+        `Found ${results.length} CORE papers.\n\n${JSON.stringify(
+          results.map((paper: Paper) => PaperFactory.toDict(paper)),
+          null,
+          2
+        )}`
+      );
+    }
+
+    case 'search_openaire': {
+      const { query, maxResults, year } = args;
+      const results = await searchers.openaire.search(query, { maxResults, year });
+
+      return jsonTextResponse(
+        `Found ${results.length} OpenAIRE papers.\n\n${JSON.stringify(
           results.map((paper: Paper) => PaperFactory.toDict(paper)),
           null,
           2

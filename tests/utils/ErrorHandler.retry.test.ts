@@ -163,19 +163,25 @@ describe('ErrorHandler.retryWithBackoff', () => {
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce('success');
 
-    const startTime = Date.now();
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
 
-    await ErrorHandler.retryWithBackoff(mockFn, {
-      maxRetries: 3,
-      initialDelayMs: 100,
-      maxDelayMs: 1000
-    });
+    try {
+      const startTime = Date.now();
 
-    const endTime = Date.now();
-    const totalTime = endTime - startTime;
+      await ErrorHandler.retryWithBackoff(mockFn, {
+        maxRetries: 3,
+        initialDelayMs: 100,
+        maxDelayMs: 1000
+      });
 
-    // Should have some delay (at least 50ms total for 2 retries with jitter)
-    expect(totalTime).toBeGreaterThan(50);
-    expect(mockFn).toHaveBeenCalledTimes(3);
+      const endTime = Date.now();
+      const totalTime = endTime - startTime;
+
+      // With Math.random fixed at 0.5, the two retries wait about 50ms + 100ms.
+      expect(totalTime).toBeGreaterThan(50);
+      expect(mockFn).toHaveBeenCalledTimes(3);
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 });

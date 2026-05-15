@@ -11,6 +11,12 @@ import { SpringerSearcher } from '../platforms/SpringerSearcher.js';
 import { WileySearcher } from '../platforms/WileySearcher.js';
 import { ScopusSearcher } from '../platforms/ScopusSearcher.js';
 import { CrossrefSearcher } from '../platforms/CrossrefSearcher.js';
+import { OpenAlexSearcher } from '../platforms/OpenAlexSearcher.js';
+import { UnpaywallSearcher } from '../platforms/UnpaywallSearcher.js';
+import { PMCSearcher } from '../platforms/PMCSearcher.js';
+import { EuropePMCSearcher } from '../platforms/EuropePMCSearcher.js';
+import { CORESearcher } from '../platforms/CORESearcher.js';
+import { OpenAIRESearcher } from '../platforms/OpenAIRESearcher.js';
 import { logDebug } from '../utils/Logger.js';
 
 export interface Searchers {
@@ -30,6 +36,12 @@ export interface Searchers {
   wiley: WileySearcher;
   scopus: ScopusSearcher;
   crossref: CrossrefSearcher;
+  openalex: OpenAlexSearcher;
+  unpaywall: UnpaywallSearcher;
+  pmc: PMCSearcher;
+  europepmc: EuropePMCSearcher;
+  core: CORESearcher;
+  openaire: OpenAIRESearcher;
 }
 
 let searchers: Searchers | null = null;
@@ -56,6 +68,12 @@ export function initializeSearchers(): Searchers {
   const wileySearcher = new WileySearcher(process.env.WILEY_TDM_TOKEN);
   const scopusSearcher = new ScopusSearcher(process.env.ELSEVIER_API_KEY);
   const crossrefSearcher = new CrossrefSearcher(process.env.CROSSREF_MAILTO);
+  const openAlexSearcher = new OpenAlexSearcher();
+  const unpaywallSearcher = new UnpaywallSearcher();
+  const pmcSearcher = new PMCSearcher();
+  const europePmcSearcher = new EuropePMCSearcher();
+  const coreSearcher = new CORESearcher();
+  const openAireSearcher = new OpenAIRESearcher();
 
   searchers = {
     arxiv: arxivSearcher,
@@ -73,7 +91,13 @@ export function initializeSearchers(): Searchers {
     springer: springerSearcher,
     wiley: wileySearcher,
     scopus: scopusSearcher,
-    crossref: crossrefSearcher
+    crossref: crossrefSearcher,
+    openalex: openAlexSearcher,
+    unpaywall: unpaywallSearcher,
+    pmc: pmcSearcher,
+    europepmc: europePmcSearcher,
+    core: coreSearcher,
+    openaire: openAireSearcher
   };
 
   logDebug('Searchers initialized successfully');

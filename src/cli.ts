@@ -2,12 +2,29 @@
 
 import * as dotenv from 'dotenv';
 import { readFileSync } from 'fs';
+import { createInterface as createPromiseInterface } from 'readline/promises';
+import { emitKeypressEvents } from 'readline';
 import { TOOLS } from './core/tools.js';
 import { initializeSearchers } from './core/searchers.js';
 import { handleToolCall } from './core/handleToolCall.js';
 import type { ToolName } from './core/schemas.js';
+import {
+  CONFIG_KEYS,
+  getConfigPath,
+  importEnvFile,
+  initUserConfig,
+  listConfigEntries,
+  loadUserConfigIntoEnv,
+  maskValue,
+  readUserConfig,
+  assertConfigKey,
+  setUserConfigValue,
+  unsetUserConfigValue
+} from './config/ConfigService.js';
+import type { ConfigKey } from './config/ConfigService.js';
 
 dotenv.config();
+loadUserConfigIntoEnv();
 
 type FlagValue = boolean | string | string[];
 
@@ -35,9 +52,12 @@ function usage(): string {
 
 Usage:
   paper-search search <query> [--platform crossref] [--max-results 10] [--year 2024]
+  paper-search search <query> [--sources crossref,openalex,pmc] [--max-results 10]
   paper-search run <tool-name> --json-args '{"query":"machine learning","maxResults":5}'
   paper-search status [--validate]
   paper-search tools
+  paper-search config <init|set|get|unset|list|doctor|path|import-env|keys>
+  paper-search setup [--all]
   paper-search download <paper-id> --platform arxiv [--save-path ./downloads]
 
 Global flags:
@@ -47,6 +67,9 @@ Global flags:
 
 Examples:
   paper-search search "large language model evaluation" --platform crossref --max-results 5 --pretty
+  paper-search search "machine learning" --sources crossref,openalex --max-results 2 --pretty
+  paper-search setup
+  paper-search config set SEMANTIC_SCHOLAR_API_KEY sk_xxx
   paper-search run search_pubmed --arg query="osteoarthritis occupational exposure" --arg maxResults=3
   paper-search status --pretty
 `;
@@ -142,7 +165,9 @@ function parseArgFlags(value: FlagValue | undefined): Record<string, unknown> {
       throw new CliError(`--arg must use key=value form: ${entry}`, 'INVALID_ARG');
     }
     const key = toCamelKey(entry.slice(0, eqIndex));
-    args[key] = coerceValue(entry.slice(eqIndex + 1));
+    const rawValue = entry.slice(eqIndex + 1);
+    const stringKeys = new Set(['paperId', 'doi', 'doiOrUrl', 'source', 'title', 'savePath']);
+    args[key] = stringKeys.has(key) ? rawValue : coerceValue(rawValue);
   }
 
   return args;
@@ -266,6 +291,14 @@ async function run(parsed: ParsedCli): Promise<unknown> {
     };
   }
 
+  if (command === 'config') {
+    return handleConfigCommand(positionals, flags);
+  }
+
+  if (command === 'setup') {
+    return handleSetupCommand(positionals, flags);
+  }
+
   if (command === 'status' || command === 'doctor') {
     return callTool('get_platform_status', { validate: flags.validate === true }, flags);
   }
@@ -312,10 +345,313 @@ async function run(parsed: ParsedCli): Promise<unknown> {
   throw new CliError(`Unknown command: ${command}`, 'UNKNOWN_COMMAND');
 }
 
+function handleConfigCommand(positionals: string[], flags: Record<string, FlagValue>): unknown {
+  const subcommand = positionals[0] || 'list';
+
+  if (subcommand === 'setup') {
+    return handleSetupCommand(positionals.slice(1), flags);
+  }
+
+  if (subcommand === 'path') {
+    return { ok: true, path: getConfigPath() };
+  }
+
+  if (subcommand === 'keys') {
+    return { ok: true, keys: CONFIG_KEYS };
+  }
+
+  if (subcommand === 'init') {
+    const result = initUserConfig(flags.force === true);
+    return { ok: true, ...result };
+  }
+
+  if (subcommand === 'list') {
+    return {
+      ok: true,
+      path: getConfigPath(),
+      entries: listConfigEntries(flags.all === true)
+    };
+  }
+
+  if (subcommand === 'doctor') {
+    const entries = listConfigEntries(true);
+    return {
+      ok: true,
+      path: getConfigPath(),
+      configured: entries.filter(entry => entry.configured).length,
+      missing: entries.filter(entry => !entry.configured).map(entry => entry.key),
+      entries
+    };
+  }
+
+  if (subcommand === 'get') {
+    const key = positionals[1];
+    if (!key) throw new CliError('Missing config key', 'MISSING_CONFIG_KEY');
+    assertConfigKey(key);
+    const entry = listConfigEntries(true).find(item => item.key === key);
+    const value = process.env[key] || readUserConfig()[key] || '';
+    return {
+      ok: true,
+      key,
+      configured: Boolean(value),
+      value: flags.raw === true ? value : maskValue(key, value),
+      source: entry?.source || 'missing'
+    };
+  }
+
+  if (subcommand === 'set') {
+    const parsed = parseConfigAssignment(positionals.slice(1), flags);
+    setUserConfigValue(parsed.key, parsed.value);
+    process.env[parsed.key] = parsed.value;
+    return {
+      ok: true,
+      path: getConfigPath(),
+      key: parsed.key,
+      value: maskValue(parsed.key, parsed.value)
+    };
+  }
+
+  if (subcommand === 'unset' || subcommand === 'delete' || subcommand === 'remove') {
+    const key = positionals[1];
+    if (!key) throw new CliError('Missing config key', 'MISSING_CONFIG_KEY');
+    unsetUserConfigValue(key);
+    return { ok: true, path: getConfigPath(), key, removed: true };
+  }
+
+  if (subcommand === 'import-env') {
+    const envPath = positionals[1] || (typeof flags.file === 'string' ? flags.file : '.env');
+    const result = importEnvFile(envPath);
+    return {
+      ok: true,
+      path: result.path,
+      imported: result.imported,
+      count: result.imported.length
+    };
+  }
+
+  throw new CliError(`Unknown config command: ${subcommand}`, 'UNKNOWN_CONFIG_COMMAND');
+}
+
+interface SetupPrompt {
+  key: ConfigKey;
+  label: string;
+  secret: boolean;
+}
+
+const DEFAULT_SETUP_PROMPTS: SetupPrompt[] = [
+  {
+    key: 'SEMANTIC_SCHOLAR_API_KEY',
+    label: 'Semantic Scholar API key, required for search_semantic_snippets',
+    secret: true
+  },
+  {
+    key: 'PAPER_SEARCH_UNPAYWALL_EMAIL',
+    label: 'Unpaywall email, recommended for open-access DOI lookup',
+    secret: false
+  },
+  {
+    key: 'CROSSREF_MAILTO',
+    label: 'Crossref contact email, recommended for polite API access',
+    secret: false
+  },
+  {
+    key: 'PAPER_SEARCH_CORE_API_KEY',
+    label: 'CORE API key, optional but recommended for stable CORE access',
+    secret: true
+  }
+];
+
+function setupPromptsFor(flags: Record<string, FlagValue>, positionals: string[]): SetupPrompt[] {
+  const keysFlag = typeof flags.keys === 'string' ? flags.keys : positionals[0];
+  if (keysFlag) {
+    return keysFlag
+      .split(',')
+      .map(key => key.trim())
+      .filter(Boolean)
+      .map(key => {
+        assertConfigKey(key);
+        return { key, label: key, secret: isSecretConfigKey(key) };
+      });
+  }
+
+  if (flags.all === true) {
+    return CONFIG_KEYS.map(key => ({ key, label: key, secret: isSecretConfigKey(key) }));
+  }
+
+  return DEFAULT_SETUP_PROMPTS;
+}
+
+function isSecretConfigKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  return normalized.includes('key') || normalized.includes('token');
+}
+
+async function handleSetupCommand(positionals: string[], flags: Record<string, FlagValue>): Promise<unknown> {
+  const { path } = initUserConfig(false);
+  const prompts = setupPromptsFor(flags, positionals);
+  const entries = new Map(listConfigEntries(true).map(entry => [entry.key, entry]));
+  const session = new PromptSession();
+  const updated: string[] = [];
+  const kept: string[] = [];
+  const skipped: string[] = [];
+
+  process.stderr.write(`Paper Search CLI setup\n`);
+  process.stderr.write(`Config file: ${path}\n`);
+  process.stderr.write(`Press Enter to keep an existing value or skip an optional value.\n\n`);
+
+  try {
+    for (const prompt of prompts) {
+      const entry = entries.get(prompt.key);
+      const current = entry?.configured ? ` current=${entry.value} source=${entry.source}` : ' not configured';
+      const question = `${prompt.label}\n${prompt.key} (${current})`;
+      const answer = prompt.secret ? await session.secret(question) : await session.line(`${question}: `);
+      const value = answer.trim();
+
+      if (!value) {
+        if (entry?.configured) kept.push(prompt.key);
+        else skipped.push(prompt.key);
+        continue;
+      }
+
+      setUserConfigValue(prompt.key, value);
+      process.env[prompt.key] = value;
+      updated.push(prompt.key);
+    }
+  } finally {
+    session.close();
+  }
+
+  const nextSteps = [
+    'Run "paper-search config doctor --pretty" to review masked configuration status.',
+    'Run "paper-search search \\"machine learning\\" --platform crossref --max-results 1 --pretty" for a no-key smoke test.'
+  ];
+
+  return {
+    ok: true,
+    path,
+    updated,
+    kept,
+    skipped,
+    nextSteps
+  };
+}
+
+class PromptSession {
+  private rl?: ReturnType<typeof createPromiseInterface>;
+  private readonly scriptedAnswers?: string[];
+
+  constructor() {
+    if (!process.stdin.isTTY) {
+      this.scriptedAnswers = readFileSync(0, 'utf8').split(/\r?\n/);
+    }
+  }
+
+  async line(question: string): Promise<string> {
+    if (this.scriptedAnswers) {
+      process.stderr.write(question);
+      const answer = this.scriptedAnswers.shift() || '';
+      process.stderr.write('\n');
+      return answer;
+    }
+
+    this.rl ??= createPromiseInterface({
+      input: process.stdin,
+      output: process.stderr
+    });
+    return this.rl.question(question);
+  }
+
+  async secret(question: string): Promise<string> {
+    if (!process.stdin.isTTY || !process.stderr.isTTY || typeof process.stdin.setRawMode !== 'function') {
+      return this.line(`${question}: `);
+    }
+
+    this.close();
+    return readHiddenLine(`${question}: `);
+  }
+
+  close(): void {
+    this.rl?.close();
+    this.rl = undefined;
+  }
+}
+
+function readHiddenLine(question: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let value = '';
+    const stdin = process.stdin;
+    const wasRaw = stdin.isRaw;
+
+    const cleanup = () => {
+      stdin.off('keypress', onKeypress);
+      if (!wasRaw) stdin.setRawMode(false);
+      stdin.pause();
+    };
+
+    const onKeypress = (text: string, key: any) => {
+      if (key?.ctrl && key.name === 'c') {
+        cleanup();
+        process.stderr.write('\n');
+        reject(new CliError('Interrupted', 'INTERRUPTED', 130));
+        return;
+      }
+
+      if (key?.name === 'return' || key?.name === 'enter') {
+        cleanup();
+        process.stderr.write('\n');
+        resolve(value);
+        return;
+      }
+
+      if (key?.name === 'backspace' || key?.name === 'delete') {
+        if (value.length > 0) {
+          value = value.slice(0, -1);
+          process.stderr.write('\b \b');
+        }
+        return;
+      }
+
+      if (text && !key?.ctrl && !key?.meta) {
+        value += text;
+        process.stderr.write('*');
+      }
+    };
+
+    process.stderr.write(question);
+    emitKeypressEvents(stdin);
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.on('keypress', onKeypress);
+  });
+}
+
+function parseConfigAssignment(
+  positionals: string[],
+  flags: Record<string, FlagValue>
+): { key: string; value: string } {
+  const first = positionals[0];
+  if (!first) throw new CliError('Missing config assignment', 'MISSING_CONFIG_ASSIGNMENT');
+
+  const eqIndex = first.indexOf('=');
+  if (eqIndex > 0) {
+    return {
+      key: first.slice(0, eqIndex),
+      value: first.slice(eqIndex + 1)
+    };
+  }
+
+  const value = positionals[1] ?? flags.value;
+  if (typeof value !== 'string') {
+    throw new CliError('Missing config value. Use "paper-search config set KEY VALUE".', 'MISSING_CONFIG_VALUE');
+  }
+  return { key: first, value };
+}
+
 async function main() {
   const parsed = parseCli(process.argv.slice(2));
 
   try {
+    maybePrintSetupHint(parsed);
     const result = await run(parsed);
     if (typeof result === 'string') {
       process.stdout.write(`${result}\n`);
@@ -336,6 +672,21 @@ async function main() {
     process.stdout.write(`${formatOutput(payload, parsed.flags)}\n`);
     process.exitCode = error?.exitCode || 1;
   }
+}
+
+function maybePrintSetupHint(parsed: ParsedCli): void {
+  if (process.env.PAPER_SEARCH_HIDE_SETUP_HINT === '1') return;
+  if (parsed.command !== 'status' && parsed.command !== 'doctor') return;
+  if (listConfigEntries(false).length > 0) return;
+
+  process.stderr.write(
+    [
+      'No Paper Search API credentials are configured yet.',
+      'Free metadata search still works, but body-snippet search and higher provider limits need optional keys.',
+      'Run "paper-search setup" to add keys, or "paper-search config doctor --pretty" to inspect config.',
+      ''
+    ].join('\n')
+  );
 }
 
 main();
