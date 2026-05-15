@@ -16,7 +16,6 @@
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
-    "prepare": "npm run build",
     "postinstall": "node scripts/postinstall.cjs",
     "prepublishOnly": "npm test -- --runInBand && npm run build"
   },
