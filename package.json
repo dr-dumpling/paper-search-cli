@@ -5,23 +5,19 @@
   "main": "dist/cli.js",
   "type": "module",
   "bin": {
-    "paper-search": "./dist/cli.js",
-    "paper-search-mcp-nodejs": "./dist/server.js"
+    "paper-search": "./dist/cli.js"
   },
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/cli.js",
     "start:cli": "tsx src/cli.ts",
-    "start:mcp": "tsx src/server.ts",
-    "dev": "tsx src/server.ts",
+    "dev": "tsx src/cli.ts",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
   "keywords": [
-    "mcp",
     "cli",
-    "model-context-protocol",
     "academic-papers",
     "research",
     "arxiv",
@@ -33,7 +29,6 @@
   "author": "dianel; CLI adaptation by dr-dumpling",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
     "@types/cheerio": "^0.22.35",
     "axios": "^1.7.2",
     "cheerio": "^1.1.2",

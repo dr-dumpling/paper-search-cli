@@ -2,10 +2,10 @@
 
 import * as dotenv from 'dotenv';
 import { readFileSync } from 'fs';
-import { TOOLS } from './mcp/tools.js';
-import { initializeSearchers } from './mcp/searchers.js';
-import { handleToolCall } from './mcp/handleToolCall.js';
-import type { ToolName } from './mcp/schemas.js';
+import { TOOLS } from './core/tools.js';
+import { initializeSearchers } from './core/searchers.js';
+import { handleToolCall } from './core/handleToolCall.js';
+import type { ToolName } from './core/schemas.js';
 
 dotenv.config();
 
@@ -43,7 +43,7 @@ Usage:
 Global flags:
   --pretty         Pretty-print JSON output
   --format text    Print only the human-readable tool text
-  --include-text   Include raw MCP-compatible text in JSON output
+  --include-text   Include raw tool response text in JSON output
 
 Examples:
   paper-search search "large language model evaluation" --platform crossref --max-results 5 --pretty

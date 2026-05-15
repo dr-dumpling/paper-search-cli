@@ -70,12 +70,12 @@ export const API_ENDPOINTS = {
 /**
  * Default User Agent
  */
-export const USER_AGENT = 'Paper-Search-MCP/1.0 (Academic Research Tool)';
+export const USER_AGENT = 'Paper-Search-CLI/1.0 (Academic Research Tool)';
 
 /**
  * Default mailto for Crossref polite pool
  */
-export const DEFAULT_MAILTO = process.env.CROSSREF_MAILTO || 'paper-search-mcp@example.com';
+export const DEFAULT_MAILTO = process.env.CROSSREF_MAILTO || 'paper-search-cli@example.com';
 
 /**
  * DOI validation pattern

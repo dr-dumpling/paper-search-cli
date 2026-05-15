@@ -1,6 +1,10 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+export interface CliTool {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
 
-export const TOOLS: Tool[] = [
+export const TOOLS: CliTool[] = [
   {
     name: 'search_papers',
     description: 'Search academic papers from multiple sources including arXiv, Web of Science, etc.',

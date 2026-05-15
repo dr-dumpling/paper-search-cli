@@ -32,7 +32,7 @@ export class CrossrefSearcher extends PaperSource {
       timeout: TIMEOUTS.DEFAULT,
       headers: {
         'Accept': 'application/json',
-        'User-Agent': `${USER_AGENT} paper-search-mcp-nodejs/0.2.6 (mailto:${this.mailto})`
+        'User-Agent': `${USER_AGENT} paper-search-cli/0.1.0 (mailto:${this.mailto})`
       }
     });
 

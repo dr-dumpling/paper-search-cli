@@ -39,7 +39,7 @@ export class RateLimiter {
     
     // 定期处理等待中的请求
     this.intervalHandle = setInterval(() => this.processPendingRequests(), Math.min(this.intervalMs, 100));
-    // Don't keep the process alive just because of the limiter interval (important for tests/MCP)
+    // Don't keep the process alive just because of the limiter interval.
     this.intervalHandle.unref?.();
   }
 
