@@ -1,0 +1,106 @@
+{
+  "name": "paper-search-cli",
+  "version": "0.1.0",
+  "description": "Agent-friendly CLI for searching and downloading academic papers from multiple sources.",
+  "main": "dist/cli.js",
+  "type": "module",
+  "bin": {
+    "paper-search": "./dist/cli.js",
+    "paper-search-mcp-nodejs": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/cli.js",
+    "start:cli": "tsx src/cli.ts",
+    "start:mcp": "tsx src/server.ts",
+    "dev": "tsx src/server.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "keywords": [
+    "mcp",
+    "cli",
+    "model-context-protocol",
+    "academic-papers",
+    "research",
+    "arxiv",
+    "pubmed",
+    "web-of-science",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "dianel; CLI adaptation by dr-dumpling",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@types/cheerio": "^0.22.35",
+    "axios": "^1.7.2",
+    "cheerio": "^1.1.2",
+    "dotenv": "^16.4.5",
+    "lru-cache": "^11.2.5",
+    "pdf-parse": "^1.1.4",
+    "xml2js": "^0.6.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/lru-cache": "^7.10.9",
+    "@types/node": "^20.14.10",
+    "@types/xml2js": "^0.4.14",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.2",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(p-limit|yocto-queue)/)"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
+    },
+    "testMatch": [
+      "**/tests/**/*.test.ts",
+      "**/__tests__/**/*.test.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts"
+    ]
+  },
+  "overrides": {
+    "entities": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dr-dumpling/paper-search-cli.git"
+  },
+  "homepage": "https://github.com/dr-dumpling/paper-search-cli#readme",
+  "bugs": {
+    "url": "https://github.com/dr-dumpling/paper-search-cli/issues"
+  }
+}
