@@ -12,7 +12,7 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 
-[Quick Start](#quick-start) · [Configuration](#configuration) · [Supported Platforms](#supported-platforms) · [Commands](#commands) · [Tool Reference](#tool-reference) · [Troubleshooting](#troubleshooting)
+[Quick Start](#quick-start) · [Configuration](#configuration) · [Agent Skill](#agent-skill) · [Supported Platforms](#supported-platforms) · [Commands](#commands) · [Tool Reference](#tool-reference) · [Troubleshooting](#troubleshooting)
 
 ## Design Goals
 
@@ -186,6 +186,19 @@ OPENAIRE_API_KEY=your_openaire_api_key_here
 - OpenAIRE: [OpenAIRE APIs](https://develop.openaire.eu/)
 
 `.env` is ignored by git. Do not commit API keys or tokens.
+
+## Agent Skill
+
+This repository includes an optional agent skill at `skills/paper-search/SKILL.md`. Install it into your agent's skill directory if your agent supports skills.
+
+For example:
+
+```bash
+mkdir -p ~/.agents/skills/paper-search
+cp skills/paper-search/SKILL.md ~/.agents/skills/paper-search/SKILL.md
+```
+
+The skill only teaches the agent how to call the `paper-search` CLI. API keys are still configured through `paper-search setup`, `paper-search config`, `.env`, or shell environment variables. Do not store secrets in the skill file.
 
 ## Output Contract
 

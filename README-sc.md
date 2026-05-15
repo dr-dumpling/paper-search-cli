@@ -12,7 +12,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 
-[快速开始](#快速开始) · [配置](#配置) · [支持的平台](#支持的平台) · [命令](#命令) · [工具参考](#工具参考) · [排障](#排障)
+[快速开始](#快速开始) · [配置](#配置) · [Agent Skill](#agent-skill) · [支持的平台](#支持的平台) · [命令](#命令) · [工具参考](#工具参考) · [排障](#排障)
 
 ## 设计目标
 
@@ -186,6 +186,19 @@ OPENAIRE_API_KEY=your_openaire_api_key_here
 - OpenAIRE: [OpenAIRE APIs](https://develop.openaire.eu/)
 
 `.env` 已被 git 忽略。不要提交 API key 或 token。
+
+## Agent Skill
+
+本仓库提供一个可选的 agent skill，位置是 `skills/paper-search/SKILL.md`。如果你的 agent 支持 skills，可以把它安装到对应的 skill 目录。
+
+例如：
+
+```bash
+mkdir -p ~/.agents/skills/paper-search
+cp skills/paper-search/SKILL.md ~/.agents/skills/paper-search/SKILL.md
+```
+
+这个 skill 只负责告诉 agent 如何调用 `paper-search` CLI。API key 仍然通过 `paper-search setup`、`paper-search config`、`.env` 或 shell 环境变量配置。不要把密钥写进 skill 文件。
 
 ## 输出约定
 
