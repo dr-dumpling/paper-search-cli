@@ -45,6 +45,18 @@ describe('ScopusSearcher', () => {
     it('should support subject filter', () => {
       expect(searcher.search).toBeDefined();
     });
+
+    it('should use standard search fields without requesting COMPLETE view', () => {
+      const params = (searcher as any).buildSearchParams('TITLE-ABS-KEY(machine learning)', 1);
+
+      expect(params.query).toBe('TITLE-ABS-KEY(machine learning)');
+      expect(params.count).toBe(1);
+      expect(params.view).toBeUndefined();
+      expect(params.field).toContain('dc:title');
+      expect(params.field).toContain('citedby-count');
+      expect(params.field).not.toContain('authkeywords');
+      expect(params.field).not.toContain('affiliation');
+    });
   });
 
   describe('getCitationIds', () => {

@@ -5,7 +5,7 @@
   "main": "dist/cli.js",
   "type": "module",
   "bin": {
-    "paper-search": "./dist/cli.js"
+    "paper-search": "dist/cli.js"
   },
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
@@ -102,7 +102,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dr-dumpling/paper-search-cli.git"
+    "url": "git+https://github.com/dr-dumpling/paper-search-cli.git"
   },
   "homepage": "https://github.com/dr-dumpling/paper-search-cli#readme",
   "bugs": {

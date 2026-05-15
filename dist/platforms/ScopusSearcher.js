@@ -103,13 +103,7 @@ export class ScopusSearcher extends PaperSource {
             await this.rateLimiter.waitForPermission();
             this.quotaManager.checkQuota('scopus');
             const response = await ErrorHandler.retryWithBackoff(() => this.client.get('/content/search/scopus', {
-                params: {
-                    query: searchQuery,
-                    count: maxResults,
-                    start: 0,
-                    view: 'COMPLETE',
-                    field: 'dc:identifier,dc:title,dc:creator,prism:publicationName,prism:coverDate,prism:doi,prism:url,prism:volume,prism:issueIdentifier,prism:pageRange,citedby-count,dc:description,authkeywords,author,affiliation,openaccess,eid'
-                }
+                params: this.buildSearchParams(searchQuery, maxResults)
             }), { context: 'Scopus search' });
             this.quotaManager.incrementUsage('scopus');
             const entries = response.data['search-results']?.entry || [];
@@ -124,6 +118,28 @@ export class ScopusSearcher extends PaperSource {
         catch (error) {
             this.handleHttpError(error, 'search');
         }
+    }
+    buildSearchParams(searchQuery, maxResults) {
+        return {
+            query: searchQuery,
+            count: maxResults,
+            start: 0,
+            field: [
+                'dc:identifier',
+                'eid',
+                'dc:title',
+                'dc:creator',
+                'prism:publicationName',
+                'prism:coverDate',
+                'prism:doi',
+                'prism:url',
+                'prism:volume',
+                'prism:issueIdentifier',
+                'prism:pageRange',
+                'citedby-count',
+                'openaccess'
+            ].join(',')
+        };
     }
     async parseEntry(entry) {
         try {

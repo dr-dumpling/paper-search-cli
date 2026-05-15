@@ -1,6 +1,8 @@
 import type { Searchers } from '../core/searchers.js';
+import { TIMEOUTS } from '../config/constants.js';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions } from '../platforms/PaperSource.js';
+import { withTimeout } from '../utils/SecurityUtils.js';
 
 export interface MultiSourceSearchResult {
   query: string;
@@ -8,6 +10,8 @@ export interface MultiSourceSearchResult {
   sources_used: string[];
   source_results: Record<string, number>;
   errors: Record<string, string>;
+  failed_sources: string[];
+  warnings: string[];
   total: number;
   raw_total: number;
   papers: Record<string, unknown>[];
@@ -54,19 +58,25 @@ export async function searchMultipleSources(
   searchers: Searchers,
   query: string,
   sources: string,
-  options: SearchOptions
+  options: SearchOptions,
+  sourceTimeoutMs: number = TIMEOUTS.SOURCE_TASK
 ): Promise<MultiSourceSearchResult> {
   const selected = parseSourceList(sources, searchers);
   const settled = await Promise.allSettled(
     selected.map(async source => {
       const searcher = (searchers as any)[source] as PaperSource;
-      const results = await searcher.search(query, options);
+      const results = await withTimeout(
+        searcher.search(query, options),
+        sourceTimeoutMs,
+        `${source} search timed out after ${sourceTimeoutMs}ms`
+      );
       return { source, results };
     })
   );
 
   const sourceResults: Record<string, number> = {};
   const errors: Record<string, string> = {};
+  const failedSources: string[] = [];
   const merged: Paper[] = [];
 
   for (let i = 0; i < settled.length; i += 1) {
@@ -75,6 +85,7 @@ export async function searchMultipleSources(
     if (result.status === 'rejected') {
       sourceResults[source] = 0;
       errors[source] = result.reason?.message || String(result.reason);
+      failedSources.push(source);
       continue;
     }
 
@@ -89,6 +100,8 @@ export async function searchMultipleSources(
     sources_used: selected,
     source_results: sourceResults,
     errors,
+    failed_sources: failedSources,
+    warnings: failedSources.map(source => `${source}: ${errors[source]}`),
     total: deduped.length,
     raw_total: merged.length,
     papers: deduped.map(paper => PaperFactory.toDict(paper))

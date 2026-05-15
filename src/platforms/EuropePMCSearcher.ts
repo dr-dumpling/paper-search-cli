@@ -79,11 +79,21 @@ export class EuropePMCSearcher extends PaperSource {
 
   async downloadPdf(paperId: string, options: DownloadOptions = {}): Promise<string> {
     const details = await this.getDetails(paperId);
-    const pdfUrl = details ? this.findPdfUrl(details) : '';
-    if (!pdfUrl) {
+    const pdfUrls = details ? this.findPdfUrls(details) : [];
+    if (pdfUrls.length === 0) {
       throw new Error(`Europe PMC paper ${paperId} does not expose an accessible PDF URL`);
     }
-    return downloadPdfFromUrl(pdfUrl, options.savePath || './downloads', `europepmc_${safeFilename(paperId)}`);
+
+    const errors: string[] = [];
+    for (const pdfUrl of pdfUrls) {
+      try {
+        return await downloadPdfFromUrl(pdfUrl, options.savePath || './downloads', `europepmc_${safeFilename(paperId)}`);
+      } catch (error: any) {
+        errors.push(`${pdfUrl}: ${error?.message || String(error)}`);
+      }
+    }
+
+    throw new Error(`Europe PMC paper ${paperId} PDF candidates failed. ${errors.join(' | ')}`);
   }
 
   async readPaper(paperId: string, options: DownloadOptions = {}): Promise<string> {
@@ -129,7 +139,7 @@ export class EuropePMCSearcher extends PaperSource {
     const query = paperId.startsWith('PMID:')
       ? `ext_id:${paperId.replace('PMID:', '')} src:med`
       : paperId.startsWith('PMC')
-        ? `ext_id:${paperId} src:pmc`
+        ? paperId
         : paperId.startsWith('10.')
           ? `doi:${paperId}`
           : `ext_id:${paperId}`;
@@ -162,12 +172,28 @@ export class EuropePMCSearcher extends PaperSource {
   }
 
   private findPdfUrl(item: EuropePmcItem): string {
+    return this.findPdfUrls(item)[0] || '';
+  }
+
+  private findPdfUrls(item: EuropePmcItem): string[] {
     const urls = item.fullTextUrlList?.fullTextUrl;
     const list = Array.isArray(urls) ? urls : urls ? [urls] : [];
-    const direct = list.find(entry => entry.documentStyle === 'pdf' && entry.url)?.url || '';
-    if (direct) return direct;
+    const pdfs = list.filter(entry => String(entry.documentStyle || '').toLowerCase() === 'pdf' && entry.url);
+    const direct = pdfs
+      .map(entry => entry.url || '')
+      .filter(url => url && !this.isEuropePmcRenderUrl(url) && !url.startsWith('ftp://'));
+    const render = pdfs
+      .map(entry => entry.url || '')
+      .filter(url => this.isEuropePmcRenderUrl(url));
     const pmcid = item.pmcid || (item.source === 'PMC' ? item.id : '');
-    return pmcid ? `https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcid.startsWith('PMC') ? pmcid : `PMC${pmcid}`}/pdf/` : '';
+    const ncbiRender = pmcid
+      ? [`https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcid.startsWith('PMC') ? pmcid : `PMC${pmcid}`}/pdf/`]
+      : [];
+    return [...direct, ...render, ...ncbiRender].filter((url, index, urls) => url && urls.indexOf(url) === index);
+  }
+
+  private isEuropePmcRenderUrl(url: string): boolean {
+    return /europepmc\.org\/articles\/[^?]+\?pdf=render/i.test(url);
   }
 
   private findLandingUrl(item: EuropePmcItem, paperId: string, doi: string): string {

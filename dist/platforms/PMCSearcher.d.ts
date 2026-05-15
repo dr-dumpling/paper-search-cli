@@ -11,6 +11,10 @@ export declare class PMCSearcher extends PaperSource {
     readPaper(paperId: string, options?: DownloadOptions): Promise<string>;
     private parseSummary;
     private findArticleId;
+    private resolvePdfUrls;
+    private resolveViaEuropePmc;
+    private resolveViaPmcOa;
+    private isEuropePmcRenderUrl;
     private normalizePmcId;
 }
 //# sourceMappingURL=PMCSearcher.d.ts.map

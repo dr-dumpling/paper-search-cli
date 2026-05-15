@@ -75,6 +75,7 @@ export declare class SemanticScholarSearcher extends PaperSource {
      * 解析单个Semantic Scholar论文
      */
     private parseSemanticPaper;
+    private normalizePdfUrl;
     private parseSnippet;
     private listParam;
     /**

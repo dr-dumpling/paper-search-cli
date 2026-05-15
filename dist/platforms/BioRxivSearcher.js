@@ -11,6 +11,7 @@ import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
 export class BioRxivSearcher extends PaperSource {
     serverType;
     rateLimiter;
@@ -75,36 +76,25 @@ export class BioRxivSearcher extends PaperSource {
      * 下载PDF文件
      */
     async downloadPdf(paperId, options = {}) {
-        try {
-            const savePath = options.savePath || './downloads';
-            // 构建PDF URL
-            const pdfUrl = `https://www.${this.serverType}.org/content/${paperId}v1.full.pdf`;
-            // 确保保存目录存在
-            if (!fs.existsSync(savePath)) {
-                fs.mkdirSync(savePath, { recursive: true });
+        const savePath = options.savePath || './downloads';
+        const candidates = this.pdfUrlCandidates(paperId);
+        let lastError;
+        await this.rateLimiter.waitForPermission();
+        for (const pdfUrl of candidates) {
+            try {
+                return await downloadPdfFromUrl(pdfUrl, savePath, `${this.serverType}_${safeFilename(paperId)}`, {
+                    headers: {
+                        Referer: `https://www.${this.serverType}.org/`,
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                    }
+                });
             }
-            const filename = `${paperId.replace(/\//g, '_')}.pdf`;
-            const filePath = path.join(savePath, filename);
-            // 检查文件是否已存在
-            if (fs.existsSync(filePath) && !options.overwrite) {
-                return filePath;
+            catch (error) {
+                lastError = error;
+                logDebug(`${this.serverType} PDF candidate failed: ${pdfUrl}`, error?.message || error);
             }
-            await this.rateLimiter.waitForPermission();
-            const response = await ErrorHandler.retryWithBackoff(() => axios.get(pdfUrl, {
-                responseType: 'stream',
-                timeout: TIMEOUTS.DOWNLOAD,
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            }), { context: `${this.serverType} download` });
-            const writer = fs.createWriteStream(filePath);
-            response.data.pipe(writer);
-            return new Promise((resolve, reject) => {
-                writer.on('finish', () => resolve(filePath));
-                writer.on('error', reject);
-            });
         }
-        catch (error) {
-            this.handleHttpError(error, 'download PDF');
-        }
+        throw new Error(`${this.serverType} PDF download failed for ${paperId}. ${lastError?.message || String(lastError)}`);
     }
     /**
      * 读取论文全文内容
@@ -141,6 +131,16 @@ export class BioRxivSearcher extends PaperSource {
         }
         return filteredCollection.map(item => this.parseBioRxivPaper(item))
             .filter(paper => paper !== null);
+    }
+    pdfUrlCandidates(paperId) {
+        const clean = paperId.trim();
+        if (/v\d+$/i.test(clean)) {
+            return [`https://www.${this.serverType}.org/content/${clean}.full.pdf`];
+        }
+        return [
+            `https://www.${this.serverType}.org/content/${clean}.full.pdf`,
+            `https://www.${this.serverType}.org/content/${clean}v1.full.pdf`
+        ];
     }
     /**
      * 解析单个bioRxiv论文

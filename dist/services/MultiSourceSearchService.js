@@ -1,4 +1,6 @@
+import { TIMEOUTS } from '../config/constants.js';
 import { PaperFactory } from '../models/Paper.js';
+import { withTimeout } from '../utils/SecurityUtils.js';
 const DEFAULT_ALL_SOURCES = [
     'crossref',
     'openalex',
@@ -32,15 +34,16 @@ export function parseSourceList(sources, searchers) {
         .filter((source, index, values) => values.indexOf(source) === index)
         .filter(source => source in searchers);
 }
-export async function searchMultipleSources(searchers, query, sources, options) {
+export async function searchMultipleSources(searchers, query, sources, options, sourceTimeoutMs = TIMEOUTS.SOURCE_TASK) {
     const selected = parseSourceList(sources, searchers);
     const settled = await Promise.allSettled(selected.map(async (source) => {
         const searcher = searchers[source];
-        const results = await searcher.search(query, options);
+        const results = await withTimeout(searcher.search(query, options), sourceTimeoutMs, `${source} search timed out after ${sourceTimeoutMs}ms`);
         return { source, results };
     }));
     const sourceResults = {};
     const errors = {};
+    const failedSources = [];
     const merged = [];
     for (let i = 0; i < settled.length; i += 1) {
         const source = selected[i];
@@ -48,6 +51,7 @@ export async function searchMultipleSources(searchers, query, sources, options) 
         if (result.status === 'rejected') {
             sourceResults[source] = 0;
             errors[source] = result.reason?.message || String(result.reason);
+            failedSources.push(source);
             continue;
         }
         sourceResults[source] = result.value.results.length;
@@ -60,6 +64,8 @@ export async function searchMultipleSources(searchers, query, sources, options) 
         sources_used: selected,
         source_results: sourceResults,
         errors,
+        failed_sources: failedSources,
+        warnings: failedSources.map(source => `${source}: ${errors[source]}`),
         total: deduped.length,
         raw_total: merged.length,
         papers: deduped.map(paper => PaperFactory.toDict(paper))

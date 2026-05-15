@@ -7,6 +7,7 @@ export declare class OpenAlexSearcher extends PaperSource {
     search(query: string, options?: SearchOptions): Promise<Paper[]>;
     downloadPdf(_paperId: string, _options?: DownloadOptions): Promise<string>;
     readPaper(_paperId: string, _options?: DownloadOptions): Promise<string>;
+    getPaperByDoi(doi: string): Promise<Paper | null>;
     private parseWork;
     private reconstructAbstract;
 }

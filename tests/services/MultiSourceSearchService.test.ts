@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import { PaperFactory } from '../../src/models/Paper.js';
-import { dedupePapers, parseSourceList } from '../../src/services/MultiSourceSearchService.js';
+import {
+  dedupePapers,
+  parseSourceList,
+  searchMultipleSources
+} from '../../src/services/MultiSourceSearchService.js';
 
 const searchers = {
   crossref: {},
@@ -98,6 +102,48 @@ describe('MultiSourceSearchService', () => {
 
       expect(deduped).toHaveLength(2);
       expect(deduped.map(paper => paper.paperId)).toEqual(['crossref-1', 'pmc-1']);
+    });
+  });
+
+  describe('searchMultipleSources', () => {
+    it('skips failed and timed-out sources while returning successful results', async () => {
+      const successfulPaper = PaperFactory.create({
+        paperId: 'crossref-1',
+        title: 'Working Source',
+        doi: '10.1000/working',
+        source: 'crossref'
+      });
+      const localSearchers = {
+        crossref: {
+          search: async () => [successfulPaper]
+        },
+        openalex: {
+          search: async () => {
+            throw new Error('OpenAlex temporary failure');
+          }
+        },
+        pubmed: {
+          search: () => new Promise(() => undefined)
+        }
+      } as any;
+
+      const result = await searchMultipleSources(
+        localSearchers,
+        'test query',
+        'crossref,openalex,pubmed',
+        { maxResults: 1 },
+        5
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.papers[0].title).toBe('Working Source');
+      expect(result.source_results.crossref).toBe(1);
+      expect(result.source_results.openalex).toBe(0);
+      expect(result.source_results.pubmed).toBe(0);
+      expect(result.failed_sources).toEqual(['openalex', 'pubmed']);
+      expect(result.errors.openalex).toContain('temporary failure');
+      expect(result.errors.pubmed).toContain('timed out');
+      expect(result.warnings).toHaveLength(2);
     });
   });
 });

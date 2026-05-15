@@ -49,7 +49,7 @@ paper-search search "machine learning" --platform crossref --max-results 3 --pre
 
 Run `paper-search setup` after installation to write optional API keys and emails into the user config.
 
-If this repository is still private or the npm package has not been published yet, install from an authenticated checkout instead:
+For local development, or to test changes that have not been released yet, install from source:
 
 ```bash
 git clone git@github.com:dr-dumpling/paper-search-cli.git
@@ -84,7 +84,7 @@ paper-search config doctor --pretty
 | Semantic Scholar | ✅ | ✅ | ✅ Body snippets | ✅ | 🟡 Optional* | AI semantic search + OA body snippets |
 | CORE | ✅ | 🟡 Conditional | 🟡 Conditional | ❌ | 🟡 Optional | Downloads work when records include PDF or full-text links |
 | OpenAIRE | ✅ | 🟡 Conditional | ❌ | ❌ | 🟡 Optional | Can feed fallback downloads when records include open links |
-| Unpaywall | 🟡 Conditional | 🟡 Conditional | ❌ | ❌ | ✅ Email | DOI-only lookup; downloads work when an OA PDF is found |
+| Unpaywall | 🟡 Conditional | 🟡 Conditional | ❌ | ❌ | ✅ Required | DOI-only lookup; requires an email; downloads work when an OA PDF is found |
 | IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | Cryptography papers |
 | Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | DOI-based paper lookup and PDF retrieval |
 | ScienceDirect | ✅ | ❌ | ❌ | ✅ | ✅ Required | Elsevier metadata and abstracts |
@@ -95,11 +95,11 @@ paper-search config doctor --pretty
 Notes:
 
 - In capability columns, `✅` means directly supported, `❌` means unsupported, and `🟡 Conditional` means support depends on record content or provider constraints, such as DOI-only lookup, available PDF/OA links, or open-access-only downloads.
-- In the API Key column, `❌` means no configuration is needed, `🟡 Optional` means configuration improves limits or stability, and `✅ Required` means configuration is required. Unpaywall requires an email rather than a traditional API key.
+- In the API Key column, `❌` means no configuration is needed, `🟡 Optional` means configuration improves limits or stability, and `✅ Required` means the key is required only when you use that platform, not that every new installation should configure it. Unpaywall requires an email rather than a traditional API key.
 - Wiley does not support keyword search through the Wiley TDM API. Use `search_crossref` to find Wiley articles and then use `download_paper` with `platform=wiley` and the DOI.
 - `platform=all` uses a curated fan-out across the more stable free/open/API sources: Crossref, OpenAlex, PubMed, PMC, Europe PMC, arXiv, bioRxiv, medRxiv, IACR, CORE, and OpenAIRE. It intentionally excludes Google Scholar, Sci-Hub, paid-key sources, DOI-only Unpaywall, and rate-limit-prone Semantic Scholar unless requested explicitly.
 - `--sources` accepts a comma-separated source list, for example `--sources crossref,openalex,pmc`.
-- Semantic Scholar body-snippet search is available through `search_semantic_snippets`, is useful for finding methodological details, and requires `SEMANTIC_SCHOLAR_API_KEY`.
+- `🟡 Optional*` for Semantic Scholar means optional for regular search; `search_semantic_snippets` body-snippet search requires `SEMANTIC_SCHOLAR_API_KEY`.
 
 ## Configuration
 
@@ -111,6 +111,7 @@ paper-search config set SEMANTIC_SCHOLAR_API_KEY your_semantic_scholar_api_key_h
 paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com
 paper-search config list --pretty
 paper-search config doctor --pretty
+paper-search diagnostics --pretty
 ```
 
 The default config path is:
@@ -122,6 +123,25 @@ The default config path is:
 The file is written with `0600` permissions. `config list` and `config doctor` mask secrets.
 
 `paper-search setup` is the guided setup command. By default it asks for the recommended credentials only: Semantic Scholar, Unpaywall email, Crossref email, and CORE. Use `paper-search setup --all` to walk through every supported configuration key, or `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY` to configure a specific subset.
+
+`paper-search diagnostics --pretty` lists every API-key or email-backed capability, the related config keys, whether the required keys are configured, common failure modes, and suggested next checks. Search commands also add a `diagnostic` field when a key-backed platform returns zero results or an auth/permission/rate-limit error.
+
+### API Key Recommendation
+
+`paper-search setup` asks only for the credentials that are most useful for ordinary new users. `✅ Required` in the platform table means "required for that platform", not "recommended for every installation".
+
+| Level | Config keys | Recommended for new users | Notes |
+| --- | --- | --- | --- |
+| Default recommended | `SEMANTIC_SCHOLAR_API_KEY` | Yes | Enables Semantic Scholar body-snippet search for methodology details and improves request stability. |
+| Default recommended | `PAPER_SEARCH_UNPAYWALL_EMAIL` or `UNPAYWALL_EMAIL` | Yes | Finds open-access PDFs from DOI records; this only needs an email, not an API key. |
+| Default recommended | `CROSSREF_MAILTO` | Yes | Puts Crossref requests in the polite pool, which is better for long-running or frequent searches. |
+| Default recommended | `CORE_API_KEY` or `PAPER_SEARCH_CORE_API_KEY` | Yes | CORE anonymous access is often rate-limited; a key makes open repository search more reliable. |
+| Biomedical-heavy use | `PUBMED_API_KEY`, `NCBI_EMAIL`, `NCBI_TOOL` | Recommended if you use PubMed heavily | Raises NCBI E-utilities limits and identifies the client. |
+| Institution entitlement | `WOS_API_KEY` | Configure only with Web of Science API access | Enables Web of Science search and citation data; requires Clarivate API entitlement. |
+| Institution entitlement | `ELSEVIER_API_KEY` | Configure only with Scopus or ScienceDirect API access | One Elsevier key does not automatically grant both products; Scopus and ScienceDirect need separate entitlements. |
+| Institution entitlement | `SPRINGER_API_KEY`, `SPRINGER_OPENACCESS_API_KEY` | Configure only when you need Springer | Used for Springer metadata and open-access records; 401 usually means an invalid key or missing product access. |
+| Institution entitlement | `WILEY_TDM_TOKEN` | Configure only with Wiley TDM/institutional full-text access | DOI-based download only; availability depends on the token and institutional subscription. |
+| Usually unnecessary | `PAPER_SEARCH_OPENAIRE_API_KEY` or `OPENAIRE_API_KEY` | Not recommended by default | OpenAIRE public search usually works without a key; configure only for account or quota requirements. |
 
 You can also import an existing `.env`:
 
@@ -154,10 +174,10 @@ PUBMED_API_KEY=your_ncbi_api_key_here
 NCBI_EMAIL=you@example.com
 NCBI_TOOL=paper-search-cli
 
-# Semantic Scholar, optional; increases request limits
+# Semantic Scholar, required for body-snippet search and useful for higher request limits
 SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
 
-# Elsevier, required for ScienceDirect and Scopus
+# Elsevier, required for Scopus and ScienceDirect; each product still needs separate entitlement
 ELSEVIER_API_KEY=your_elsevier_api_key_here
 
 # Springer Nature, required for Springer search and open access download
@@ -314,6 +334,16 @@ paper-search status --validate --pretty
 ```
 
 `--validate` may make live provider requests. Use it when you intentionally want credential validation.
+
+### `paper-search diagnostics`
+
+Show API-key-backed capabilities and troubleshooting guidance. This does not print secrets.
+
+```bash
+paper-search diagnostics --pretty
+```
+
+When a command returns zero results from a configured key-backed source, or fails with 401, 403, 400, or 429, JSON output includes a `diagnostic` field with likely causes and next actions.
 
 ### `paper-search config`
 

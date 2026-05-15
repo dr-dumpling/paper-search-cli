@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
-import { downloadPdfFromUrl } from '../utils/PdfDownload.js';
+import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
 import { PDFExtractor } from '../utils/PDFExtractor.js';
 
 interface PmcSummary {
@@ -78,8 +78,23 @@ export class PMCSearcher extends PaperSource {
 
   async downloadPdf(paperId: string, options: DownloadOptions = {}): Promise<string> {
     const pmcid = this.normalizePmcId(paperId);
-    const url = `https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcid}/pdf/`;
-    return downloadPdfFromUrl(url, options.savePath || './downloads', pmcid);
+    const pdfUrls = await this.resolvePdfUrls(pmcid);
+    if (pdfUrls.length === 0) {
+      throw new Error(
+        `PMC paper ${pmcid} does not expose a direct downloadable PDF URL. Some PMC viewer PDFs require browser proof-of-work; try Europe PMC, CORE, Unpaywall, or download_with_fallback.`
+      );
+    }
+
+    const errors: string[] = [];
+    for (const pdfUrl of pdfUrls) {
+      try {
+        return await downloadPdfFromUrl(pdfUrl, options.savePath || './downloads', `pmc_${safeFilename(pmcid)}`);
+      } catch (error: any) {
+        errors.push(`${pdfUrl}: ${error?.message || String(error)}`);
+      }
+    }
+
+    throw new Error(`PMC paper ${pmcid} PDF candidates failed. ${errors.join(' | ')}`);
   }
 
   async readPaper(paperId: string, options: DownloadOptions = {}): Promise<string> {
@@ -114,6 +129,75 @@ export class PMCSearcher extends PaperSource {
   private findArticleId(item: PmcSummary, idType: string): string {
     const article = (item.articleids || []).find(id => id.idtype?.toLowerCase() === idType.toLowerCase());
     return article?.value || '';
+  }
+
+  private async resolvePdfUrls(pmcid: string): Promise<string[]> {
+    return [
+      ...await this.resolveViaEuropePmc(pmcid),
+      ...await this.resolveViaPmcOa(pmcid)
+    ].filter((url, index, urls) => url && urls.indexOf(url) === index);
+  }
+
+  private async resolveViaEuropePmc(pmcid: string): Promise<string[]> {
+    try {
+      const response = await axios.get('https://www.ebi.ac.uk/europepmc/webservices/rest/search', {
+        params: {
+          query: pmcid,
+          format: 'json',
+          resultType: 'core',
+          pageSize: 1
+        },
+        timeout: TIMEOUTS.DEFAULT,
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': USER_AGENT
+        }
+      });
+
+      const item = response.data?.resultList?.result?.[0];
+      const urls = item?.fullTextUrlList?.fullTextUrl;
+      const list = Array.isArray(urls) ? urls : urls ? [urls] : [];
+      const direct = list.filter((entry: any) => (
+        String(entry?.documentStyle || '').toLowerCase() === 'pdf' &&
+        entry?.url &&
+        !this.isEuropePmcRenderUrl(entry.url) &&
+        !String(entry.url).startsWith('ftp://')
+      )).map((entry: any) => entry.url);
+      const render = list.filter((entry: any) => (
+        String(entry?.documentStyle || '').toLowerCase() === 'pdf' &&
+        entry?.url &&
+        this.isEuropePmcRenderUrl(entry.url)
+      )).map((entry: any) => entry.url);
+
+      return [...direct, ...render];
+    } catch {
+      return [];
+    }
+  }
+
+  private async resolveViaPmcOa(pmcid: string): Promise<string[]> {
+    try {
+      const response = await axios.get('https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi', {
+        params: { id: pmcid },
+        timeout: TIMEOUTS.DEFAULT,
+        headers: {
+          Accept: 'application/xml,text/xml,*/*',
+          'User-Agent': USER_AGENT
+        },
+        responseType: 'text'
+      });
+      const xml = String(response.data || '');
+      const matches = Array.from(xml.matchAll(/<link\b(?=[^>]*\bformat=["']pdf["'])(?=[^>]*\bhref=["']([^"']+)["'])[^>]*>/gi));
+      return matches
+        .map(match => match[1] || '')
+        .filter(href => href && !href.startsWith('ftp://'));
+    } catch {
+      return [];
+    }
+  }
+
+  private isEuropePmcRenderUrl(url: string): boolean {
+    return /europepmc\.org\/articles\/[^?]+\?pdf=render/i.test(url);
   }
 
   private normalizePmcId(value: string): string {

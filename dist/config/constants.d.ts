@@ -16,6 +16,8 @@ export declare const TIMEOUTS: {
     readonly DOWNLOAD: 120000;
     /** Timeout for batch operations */
     readonly BATCH: 90000;
+    /** Per-source timeout for fan-out operations */
+    readonly SOURCE_TASK: 15000;
     /** Timeout buffer for withTimeout wrapper */
     readonly BUFFER: 5000;
 };
@@ -90,6 +92,8 @@ declare const _default: {
         readonly DOWNLOAD: 120000;
         /** Timeout for batch operations */
         readonly BATCH: 90000;
+        /** Per-source timeout for fan-out operations */
+        readonly SOURCE_TASK: 15000;
         /** Timeout buffer for withTimeout wrapper */
         readonly BUFFER: 5000;
     };

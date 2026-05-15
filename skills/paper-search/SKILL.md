@@ -52,7 +52,7 @@ CLI 的配置优先级：
 如果 `paper-search` 不存在，先告知用户需要安装。用户要求你安装时再执行：
 
 ```bash
-npm install -g github:dr-dumpling/paper-search-cli
+npm install -g paper-search-cli
 paper-search setup
 paper-search status --pretty
 ```
@@ -177,7 +177,7 @@ paper-search run search_crossref --arg query="full paper title" --arg maxResults
 
 | 场景 | 处理 |
 |---|---|
-| CLI 不存在 | 提示安装 `npm install -g github:dr-dumpling/paper-search-cli` |
+| CLI 不存在 | 提示安装 `npm install -g paper-search-cli` |
 | API key 缺失 | 提示运行 `paper-search setup`；不要索要或保存 key |
 | 429 限流 | 降低 `--max-results`，换平台，或提示配置可选 key |
 | 0 结果 | 放宽关键词，换英文同义词，换平台，或用 `--sources` 扩展 |

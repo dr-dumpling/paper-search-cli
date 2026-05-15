@@ -5,8 +5,10 @@
 
 import axios from 'axios';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as xml2js from 'xml2js';
+import * as cheerio from 'cheerio';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
@@ -39,6 +41,26 @@ interface ArxivResponse {
     entry?: ArxivEntry | ArxivEntry[];
     'opensearch:totalResults': string[];
   };
+}
+
+type ArxivSearchParams = {
+  search_query: string;
+  start: number;
+  max_results: number;
+  sortBy: string;
+  sortOrder: string;
+};
+
+const ARXIV_MAX_RESULTS = 25;
+const ARXIV_SEARCH_TIMEOUT_MS = 10000;
+const ARXIV_EXPORT_API_INTERVAL_MS = 3000;
+const ARXIV_EXPORT_API_COOLDOWN_MS = 30000;
+const ARXIV_RATE_LIMIT_LOCK_STALE_MS = 10000;
+const ARXIV_RATE_LIMIT_LOCK_POLL_MS = 100;
+
+interface ArxivRateLimitState {
+  lastRequestAt?: number;
+  cooldownUntil?: number;
 }
 
 export class ArxivSearcher extends PaperSource {
@@ -97,9 +119,11 @@ export class ArxivSearcher extends PaperSource {
         'descending': 'descending'
       };
 
-      const params = {
+      const maxResults = this.normalizeMaxResults(options.maxResults);
+      const params: ArxivSearchParams = {
         search_query: searchQuery,
-        max_results: options.maxResults || 10,
+        start: 0,
+        max_results: maxResults,
         sortBy: this.mapSortField(options.sortBy || 'relevance'),
         sortOrder: sortOrderMap[options.sortOrder || 'desc'] || 'descending'
       };
@@ -107,31 +131,300 @@ export class ArxivSearcher extends PaperSource {
       logDebug(`arXiv API Request: GET ${url}`);
       logDebug('arXiv Request params:', params);
 
-      await this.rateLimiter.waitForPermission();
-
-      const response = await ErrorHandler.retryWithBackoff(
-        () => axios.get(url, {
-          params,
-          timeout: TIMEOUTS.DEFAULT,
-          headers: { 'User-Agent': USER_AGENT }
-        }),
-        { context: 'arXiv search' }
-      );
-
-      logDebug(`arXiv API Response: ${response.status} ${response.statusText}, Data length: ${response.data?.length || 0}`);
-
-      const papers = await this.parseSearchResponse(response.data);
-      logDebug(`arXiv Parsed ${papers.length} papers`);
+      const papers = await this.searchViaExportApi(url, params, query, options);
+      const limitedPapers = papers.slice(0, maxResults);
+      logDebug(`arXiv Parsed ${limitedPapers.length} papers`);
 
       // Cache results
       const cacheKey = this.cache.generateKey('arxiv', query, options);
-      this.cache.set(cacheKey, papers);
+      this.cache.set(cacheKey, limitedPapers);
 
-      return papers;
+      return limitedPapers;
     } catch (error: any) {
       logDebug('arXiv Search Error:', error.message);
       this.handleHttpError(error, 'search');
     }
+  }
+
+  private async searchViaExportApi(
+    url: string,
+    params: ArxivSearchParams,
+    originalQuery: string,
+    options: SearchOptions
+  ): Promise<Paper[]> {
+    try {
+      await this.rateLimiter.waitForPermission();
+      await this.waitForGlobalExportApiSlot();
+
+      const response = await this.fetchSearchPage(url, params);
+      logDebug(`arXiv API Response: ${response.status} ${response.statusText}, Data length: ${response.data?.length || 0}`);
+
+      return await this.parseSearchResponse(response.data);
+    } catch (apiError: any) {
+      if (this.isRateLimitError(apiError)) {
+        await this.markGlobalExportApiCooldown();
+      }
+
+      if (!this.shouldUseWebFallback(apiError)) {
+        throw apiError;
+      }
+
+      logDebug(`arXiv Export API failed (${apiError.message}); trying web search fallback`);
+      try {
+        return await this.searchViaWebFallback(originalQuery, options, params.max_results);
+      } catch (fallbackError: any) {
+        logDebug(`arXiv web fallback failed: ${fallbackError.message}`);
+        throw apiError;
+      }
+    }
+  }
+
+  private async fetchSearchPage(url: string, params: ArxivSearchParams) {
+    try {
+      return await ErrorHandler.retryWithBackoff(
+        () =>
+          axios.get(url, {
+            params,
+            timeout: ARXIV_SEARCH_TIMEOUT_MS,
+            headers: { 'User-Agent': USER_AGENT }
+          }),
+        {
+          context: 'arXiv search',
+          maxRetries: 0
+        }
+      );
+    } catch (error: any) {
+      if (this.isTimeoutError(error)) {
+        throw new Error(
+          `arXiv search timed out after ${ARXIV_SEARCH_TIMEOUT_MS}ms. Try a narrower query or smaller maxResults if this persists.`
+        );
+      }
+      throw error;
+    }
+  }
+
+  private normalizeMaxResults(maxResults?: number): number {
+    if (!Number.isFinite(maxResults)) {
+      return 10;
+    }
+    return Math.max(1, Math.min(ARXIV_MAX_RESULTS, Math.floor(maxResults as number)));
+  }
+
+  private isTimeoutError(error: any): boolean {
+    return (
+      error?.code === 'ECONNABORTED' ||
+      error?.code === 'ETIMEDOUT' ||
+      /timeout|timed out/i.test(error?.message || '')
+    );
+  }
+
+  private shouldUseWebFallback(error: any): boolean {
+    const status = error?.response?.status || error?.status;
+    return this.isTimeoutError(error) || [429, 500, 502, 503, 504].includes(status);
+  }
+
+  private isRateLimitError(error: any): boolean {
+    return (error?.response?.status || error?.status) === 429;
+  }
+
+  private async waitForGlobalExportApiSlot(): Promise<void> {
+    await this.withArxivRateLimitLock(async () => {
+      const paths = this.getArxivRateLimitPaths();
+      const state = this.readArxivRateLimitState(paths.statePath);
+      const now = Date.now();
+
+      if (state.cooldownUntil && state.cooldownUntil > now) {
+        throw this.createArxivCooldownError(state.cooldownUntil - now);
+      }
+
+      const waitMs = Math.max(0, (state.lastRequestAt || 0) + ARXIV_EXPORT_API_INTERVAL_MS - now);
+      if (waitMs > 0) {
+        await this.sleep(waitMs);
+      }
+
+      const lastRequestAt = Date.now();
+      const nextState: ArxivRateLimitState = { ...state, lastRequestAt };
+      if (nextState.cooldownUntil && nextState.cooldownUntil <= lastRequestAt) {
+        delete nextState.cooldownUntil;
+      }
+      this.writeArxivRateLimitState(paths.statePath, nextState);
+    });
+  }
+
+  private async markGlobalExportApiCooldown(): Promise<void> {
+    await this.withArxivRateLimitLock(async () => {
+      const paths = this.getArxivRateLimitPaths();
+      const state = this.readArxivRateLimitState(paths.statePath);
+      this.writeArxivRateLimitState(paths.statePath, {
+        ...state,
+        cooldownUntil: Date.now() + ARXIV_EXPORT_API_COOLDOWN_MS
+      });
+    });
+  }
+
+  private async withArxivRateLimitLock<T>(operation: () => Promise<T>): Promise<T> {
+    const paths = this.getArxivRateLimitPaths();
+    fs.mkdirSync(paths.dir, { recursive: true });
+    const fd = await this.acquireArxivRateLimitLock(paths.lockPath);
+
+    try {
+      return await operation();
+    } finally {
+      fs.closeSync(fd);
+      fs.rmSync(paths.lockPath, { force: true });
+    }
+  }
+
+  private async acquireArxivRateLimitLock(lockPath: string): Promise<number> {
+    while (true) {
+      try {
+        return fs.openSync(lockPath, 'wx');
+      } catch (error: any) {
+        if (error?.code !== 'EEXIST') {
+          throw error;
+        }
+
+        this.removeStaleArxivRateLimitLock(lockPath);
+        await this.sleep(ARXIV_RATE_LIMIT_LOCK_POLL_MS);
+      }
+    }
+  }
+
+  private removeStaleArxivRateLimitLock(lockPath: string): void {
+    try {
+      const stats = fs.statSync(lockPath);
+      if (Date.now() - stats.mtimeMs > ARXIV_RATE_LIMIT_LOCK_STALE_MS) {
+        fs.rmSync(lockPath, { force: true });
+      }
+    } catch {
+      // Another process may have released the lock between stat and remove.
+    }
+  }
+
+  private getArxivRateLimitPaths(): { dir: string; statePath: string; lockPath: string } {
+    const dir = process.env.PAPER_SEARCH_CACHE_DIR || path.join(os.homedir(), '.cache', 'paper-search');
+    return {
+      dir,
+      statePath: path.join(dir, 'arxiv-rate-limit.json'),
+      lockPath: path.join(dir, 'arxiv-rate-limit.lock')
+    };
+  }
+
+  private readArxivRateLimitState(statePath: string): ArxivRateLimitState {
+    try {
+      if (!fs.existsSync(statePath)) {
+        return {};
+      }
+      const parsed = JSON.parse(fs.readFileSync(statePath, 'utf8')) as ArxivRateLimitState;
+      return {
+        lastRequestAt: typeof parsed.lastRequestAt === 'number' ? parsed.lastRequestAt : undefined,
+        cooldownUntil: typeof parsed.cooldownUntil === 'number' ? parsed.cooldownUntil : undefined
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  private writeArxivRateLimitState(statePath: string, state: ArxivRateLimitState): void {
+    fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  }
+
+  private createArxivCooldownError(waitMs: number): Error {
+    const error = new Error(`arXiv Export API is cooling down for ${Math.ceil(waitMs / 1000)}s after a rate-limit response.`);
+    (error as any).status = 429;
+    return error;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async searchViaWebFallback(query: string, options: SearchOptions, maxResults: number): Promise<Paper[]> {
+    const params: Record<string, string | number> = {
+      query,
+      searchtype: 'all',
+      abstracts: 'show',
+      size: this.webFallbackPageSize(maxResults)
+    };
+    const order = this.mapWebSortOrder(options);
+    if (order) {
+      params.order = order;
+    }
+
+    const response = await ErrorHandler.retryWithBackoff(
+      () =>
+        axios.get('https://arxiv.org/search/', {
+          params,
+          timeout: TIMEOUTS.DEFAULT,
+          headers: { 'User-Agent': USER_AGENT }
+        }),
+      {
+        context: 'arXiv web fallback',
+        maxRetries: 1,
+        initialDelayMs: 5000,
+        maxDelayMs: 15000
+      }
+    );
+
+    return this.parseWebSearchResponse(response.data).slice(0, maxResults);
+  }
+
+  private parseWebSearchResponse(htmlData: string): Paper[] {
+    const $ = cheerio.load(htmlData);
+    const papers: Paper[] = [];
+
+    $('li.arxiv-result').each((_, element) => {
+      const item = $(element);
+      const absHref = item.find('p.list-title a[href*="/abs/"]').first().attr('href') || '';
+      const paperId = absHref.split('/abs/').pop()?.trim();
+      if (!paperId) {
+        return;
+      }
+
+      const title = this.cleanText(item.find('p.title').first().text());
+      const authors = item
+        .find('p.authors a')
+        .map((_, author) => this.cleanText($(author).text()))
+        .get()
+        .filter(Boolean);
+
+      const abstractNode = item.find('.abstract-full').first().clone();
+      abstractNode.find('a').remove();
+      const shortAbstractNode = item.find('.abstract-short').first().clone();
+      shortAbstractNode.find('a').remove();
+      const abstract = this.cleanText(abstractNode.text() || shortAbstractNode.text()).replace(/\s*(Less|More)$/i, '');
+
+      const categories = item
+        .find('.tags .tag')
+        .map((_, tag) => this.cleanText($(tag).text()))
+        .get()
+        .filter(Boolean);
+
+      const submittedText = item.find('p.is-size-7').first().text().match(/Submitted\s+([^;]+);?/i)?.[1]?.trim();
+      const publishedDate = submittedText ? new Date(submittedText) : null;
+      const year = publishedDate && !Number.isNaN(publishedDate.getTime()) ? publishedDate.getFullYear() : undefined;
+
+      papers.push(
+        PaperFactory.create({
+          paperId,
+          title,
+          authors,
+          abstract,
+          publishedDate: publishedDate && !Number.isNaN(publishedDate.getTime()) ? publishedDate : null,
+          pdfUrl: `https://arxiv.org/pdf/${paperId}`,
+          url: `https://arxiv.org/abs/${paperId}`,
+          source: 'arxiv',
+          categories,
+          year,
+          extra: {
+            arxivId: paperId,
+            fallback: 'arxiv_web_search'
+          }
+        })
+      );
+    });
+
+    return papers;
   }
 
   /**
@@ -201,7 +494,7 @@ export class ArxivSearcher extends PaperSource {
    * 构建搜索查询
    */
   private buildSearchQuery(query: string, options: SearchOptions): string {
-    let searchQuery = query;
+    let searchQuery = this.normalizeSearchQuery(query);
 
     // 添加作者过滤
     if (options.author) {
@@ -230,6 +523,41 @@ export class ArxivSearcher extends PaperSource {
     }
 
     return searchQuery;
+  }
+
+  private normalizeSearchQuery(query: string): string {
+    const trimmed = query.trim();
+    if (!trimmed || this.hasArxivQuerySyntax(trimmed)) {
+      return trimmed;
+    }
+
+    return trimmed
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(term => `all:${this.escapeArxivTerm(term)}`)
+      .join(' AND ');
+  }
+
+  private hasArxivQuerySyntax(query: string): boolean {
+    return /\b(all|ti|au|abs|co|jr|cat|rn|id):/i.test(query) || /\b(AND|OR|ANDNOT)\b/i.test(query);
+  }
+
+  private escapeArxivTerm(term: string): string {
+    const escaped = term.replace(/"/g, '\\"');
+    return /[\s()]/.test(escaped) ? `"${escaped}"` : escaped;
+  }
+
+  private webFallbackPageSize(maxResults: number): 25 | 50 | 100 {
+    if (maxResults <= 25) return 25;
+    if (maxResults <= 50) return 50;
+    return 100;
+  }
+
+  private mapWebSortOrder(options: SearchOptions): string | undefined {
+    if (options.sortBy === 'date') {
+      return options.sortOrder === 'asc' ? 'announced_date_first' : '-announced_date_first';
+    }
+    return undefined;
   }
 
   /**

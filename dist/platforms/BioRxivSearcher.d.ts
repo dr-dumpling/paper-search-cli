@@ -31,6 +31,7 @@ export declare class BioRxivSearcher extends PaperSource {
      * 解析搜索响应
      */
     private parseSearchResponse;
+    private pdfUrlCandidates;
     /**
      * 解析单个bioRxiv论文
      */

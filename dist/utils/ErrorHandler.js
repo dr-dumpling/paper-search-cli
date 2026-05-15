@@ -128,8 +128,11 @@ export class ErrorHandler {
         const candidates = [
             error.response?.data?.message,
             error.response?.data?.error?.message,
+            error.response?.data?.error?.error_description,
             error.response?.data?.error,
             error.response?.data?.detail,
+            error.response?.data?.['service-error']?.status?.statusText,
+            error.response?.data?.apiMessage,
             error.response?.statusText,
             error.message
         ];
@@ -147,6 +150,9 @@ export class ErrorHandler {
         const statusDesc = status ? HTTP_ERROR_CODES[status] : '';
         // Platform-specific messages
         if (status === 401) {
+            if (/not authorized|insufficient|permission|entitlement|access.*requested/i.test(message)) {
+                return `${this.platform}: API key was accepted but does not have permission for this API product, view, or resource.`;
+            }
             return `${this.platform}: Invalid or missing API key. Please check your credentials.`;
         }
         if (status === 403) {

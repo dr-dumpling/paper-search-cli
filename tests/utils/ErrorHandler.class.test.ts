@@ -198,6 +198,31 @@ describe('ErrorHandler', () => {
       expect(() => errorHandler.handleHttpError(mockError, 'search')).toThrow(ApiError);
     });
 
+    it('should distinguish insufficient API product permissions from invalid keys', () => {
+      const mockError = {
+        response: {
+          status: 401,
+          data: {
+            'service-error': {
+              status: {
+                statusText: 'The requestor is not authorized to access the requested view or fields of the resource'
+              }
+            }
+          }
+        },
+        config: {
+          url: 'https://api.example.com/search',
+          method: 'get'
+        }
+      };
+
+      try {
+        errorHandler.handleHttpError(mockError, 'search');
+      } catch (error) {
+        expect((error as ApiError).message).toContain('does not have permission');
+      }
+    });
+
     it('should include platform name in error message', () => {
       const mockError = {
         response: {

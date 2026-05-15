@@ -7,6 +7,12 @@ import { emitKeypressEvents } from 'readline';
 import { TOOLS } from './core/tools.js';
 import { initializeSearchers } from './core/searchers.js';
 import { handleToolCall } from './core/handleToolCall.js';
+import {
+  diagnoseError,
+  diagnoseToolResult,
+  diagnosticContextFromCli,
+  getRequirementStatus
+} from './core/diagnostics.js';
 import type { ToolName } from './core/schemas.js';
 import {
   CONFIG_KEYS,
@@ -45,7 +51,12 @@ class CliError extends Error {
   }
 }
 
-const GLOBAL_FLAGS = new Set(['pretty', 'format', 'includeText', 'include-text', 'help', 'h']);
+const GLOBAL_FLAGS = new Set(['pretty', 'format', 'includeText', 'include-text', 'help', 'h', 'version', 'v']);
+
+function packageVersion(): string {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version?: string };
+  return pkg.version || '0.0.0';
+}
 
 function usage(): string {
   return `paper-search - agent-friendly academic paper search CLI
@@ -56,6 +67,7 @@ Usage:
   paper-search run <tool-name> --json-args '{"query":"machine learning","maxResults":5}'
   paper-search status [--validate]
   paper-search tools
+  paper-search diagnostics
   paper-search config <init|set|get|unset|list|doctor|path|import-env|keys>
   paper-search setup [--all]
   paper-search download <paper-id> --platform arxiv [--save-path ./downloads]
@@ -64,6 +76,7 @@ Global flags:
   --pretty         Pretty-print JSON output
   --format text    Print only the human-readable tool text
   --include-text   Include raw tool response text in JSON output
+  --version, -v    Print the CLI version
 
 Examples:
   paper-search search "large language model evaluation" --platform crossref --max-results 5 --pretty
@@ -78,6 +91,9 @@ Examples:
 function parseCli(argv: string[]): ParsedCli {
   if (argv[0] === '--help' || argv[0] === '-h') {
     return { command: 'help', positionals: [], flags: { help: true } };
+  }
+  if (argv[0] === '--version' || argv[0] === '-v') {
+    return { command: 'version', positionals: [], flags: { version: true } };
   }
 
   const [command = 'help', ...rest] = argv;
@@ -117,6 +133,10 @@ function parseCli(argv: string[]): ParsedCli {
     if (token.startsWith('-') && token.length > 1) {
       if (token === '-h') {
         flags.help = true;
+        continue;
+      }
+      if (token === '-v') {
+        flags.version = true;
         continue;
       }
       throw new CliError(`Unsupported short flag: ${token}`, 'UNSUPPORTED_FLAG');
@@ -260,6 +280,18 @@ async function callTool(tool: string, args: Record<string, unknown>, flags: Reco
     data: extractFirstJsonValue(text)
   };
 
+  const diagnostic = diagnoseToolResult({
+    tool,
+    args,
+    platform: typeof args.platform === 'string' ? args.platform : undefined,
+    sources: typeof args.sources === 'string' ? args.sources : undefined,
+    data: payload.data,
+    message: String(payload.message || '')
+  });
+  if (diagnostic) {
+    payload.diagnostic = diagnostic;
+  }
+
   if (flags.includeText) {
     payload.text = text;
   }
@@ -284,6 +316,10 @@ async function run(parsed: ParsedCli): Promise<unknown> {
     return usage();
   }
 
+  if (flags.version || command === 'version') {
+    return packageVersion();
+  }
+
   if (command === 'tools') {
     return {
       ok: true,
@@ -292,6 +328,13 @@ async function run(parsed: ParsedCli): Promise<unknown> {
         description: tool.description,
         inputSchema: tool.inputSchema
       }))
+    };
+  }
+
+  if (command === 'diagnostics' || command === 'requirements') {
+    return {
+      ok: true,
+      requirements: getRequirementStatus()
     };
   }
 
@@ -663,16 +706,30 @@ async function main() {
       process.stdout.write(`${formatOutput(result, parsed.flags)}\n`);
     }
   } catch (error: any) {
-    const payload = {
-      ok: false,
-      error: {
-        name: error?.name || 'Error',
-        code: error?.code || 'ERROR',
-        message: error?.message || String(error)
-      }
+    const diagnostic = diagnoseError(
+      error,
+      diagnosticContextFromCli(parsed.command, parsed.positionals, parsed.flags as Record<string, unknown>)
+    );
+    const errorPayload = {
+      name: error?.name || 'Error',
+      code: error?.code || 'ERROR',
+      message: error?.message || String(error)
     };
+    const payload: Record<string, unknown> = {
+      ok: false,
+      error: errorPayload
+    };
+    if (diagnostic) {
+      payload.diagnostic = diagnostic;
+    }
 
-    process.stderr.write(`${payload.error.message}\n`);
+    process.stderr.write(`${errorPayload.message}\n`);
+    if (diagnostic) {
+      process.stderr.write(`Diagnostic: ${diagnostic.summary}\n`);
+      if (diagnostic.actions[0]) {
+        process.stderr.write(`Next: ${diagnostic.actions[0]}\n`);
+      }
+    }
     process.stdout.write(`${formatOutput(payload, parsed.flags)}\n`);
     process.exitCode = error?.exitCode || 1;
   }

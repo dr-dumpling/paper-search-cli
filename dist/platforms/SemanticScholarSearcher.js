@@ -13,6 +13,7 @@ import { RequestCache } from '../utils/RequestCache.js';
 import { sanitizeDoi } from '../utils/SecurityUtils.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
+import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
 export class SemanticScholarSearcher extends PaperSource {
     rateLimiter;
     cache;
@@ -226,26 +227,11 @@ export class SemanticScholarSearcher extends PaperSource {
                 throw new Error(`No PDF URL available for paper ${paperId}`);
             }
             const savePath = options.savePath || './downloads';
-            // 确保保存目录存在
-            if (!fs.existsSync(savePath)) {
-                fs.mkdirSync(savePath, { recursive: true });
-            }
-            const filename = `semantic_${paperId.replace(/[/\\:*?"<>|]/g, '_')}.pdf`;
-            const filePath = path.join(savePath, filename);
-            // 检查文件是否已存在
-            if (fs.existsSync(filePath) && !options.overwrite) {
-                return filePath;
-            }
-            const response = await ErrorHandler.retryWithBackoff(() => axios.get(paper.pdfUrl, {
-                responseType: 'stream',
-                timeout: TIMEOUTS.DOWNLOAD,
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            }), { context: 'Semantic Scholar download' });
-            const writer = fs.createWriteStream(filePath);
-            response.data.pipe(writer);
-            return new Promise((resolve, reject) => {
-                writer.on('finish', () => resolve(filePath));
-                writer.on('error', reject);
+            return await downloadPdfFromUrl(paper.pdfUrl, savePath, `semantic_${safeFilename(paperId)}`, {
+                headers: {
+                    Referer: paper.url || 'https://www.semanticscholar.org/',
+                    'User-Agent': USER_AGENT
+                }
             });
         }
         catch (error) {
@@ -312,13 +298,13 @@ export class SemanticScholarSearcher extends PaperSource {
             // 提取PDF URL
             let pdfUrl = '';
             if (item.openAccessPdf?.url) {
-                pdfUrl = item.openAccessPdf.url;
+                pdfUrl = this.normalizePdfUrl(item.openAccessPdf.url);
             }
             else if (item.openAccessPdf?.disclaimer) {
                 // 尝试从disclaimer中提取URL
                 const urlMatch = item.openAccessPdf.disclaimer.match(/https?:\/\/[^\s,)]+/);
                 if (urlMatch) {
-                    pdfUrl = urlMatch[0];
+                    pdfUrl = this.normalizePdfUrl(urlMatch[0]);
                 }
             }
             // 提取DOI
@@ -360,6 +346,17 @@ export class SemanticScholarSearcher extends PaperSource {
             logDebug('Error parsing Semantic Scholar paper:', error);
             return null;
         }
+    }
+    normalizePdfUrl(url) {
+        const clean = url.trim();
+        const arxivAbs = clean.match(/^https?:\/\/arxiv\.org\/abs\/([^?#]+)(?:[?#].*)?$/i);
+        if (arxivAbs) {
+            return `https://arxiv.org/pdf/${arxivAbs[1]}`;
+        }
+        if (/^https?:\/\/api\.unpaywall\.org\//i.test(clean) || /^https?:\/\/(?:dx\.)?doi\.org\//i.test(clean)) {
+            return '';
+        }
+        return clean;
     }
     parseSnippet(item) {
         const paper = item?.paper || {};

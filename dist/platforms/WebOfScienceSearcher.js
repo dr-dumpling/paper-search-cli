@@ -230,8 +230,10 @@ export class WebOfScienceSearcher extends PaperSource {
         // 添加排序参数 - 使用正确的API参数名
         if (options.sortBy) {
             const sortField = this.mapSortField(options.sortBy);
-            const direction = (options.sortOrder || 'DESC').toUpperCase();
-            params.sortField = `${sortField} ${direction}`; // v1/v2 expect "TAG DIRECTION"
+            if (sortField) {
+                const direction = (options.sortOrder || 'desc').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+                params.sortField = `${sortField} ${direction}`;
+            }
         }
         return params;
     }
@@ -336,14 +338,16 @@ export class WebOfScienceSearcher extends PaperSource {
      */
     mapSortField(sortBy) {
         const fieldMap = {
-            'relevance': 'relevance',
-            'date': 'PD', // Publication Date - 更准确的日期排序字段
+            'relevance': 'RS',
+            'date': 'PY',
             'citations': 'TC', // Times Cited
-            'title': 'TI', // Title
-            'author': 'AU', // Author
-            'journal': 'SO' // Source (Journal)
+            'title': undefined,
+            'author': undefined,
+            'journal': undefined
         };
-        return fieldMap[sortBy.toLowerCase()] || 'relevance';
+        return Object.prototype.hasOwnProperty.call(fieldMap, sortBy.toLowerCase())
+            ? fieldMap[sortBy.toLowerCase()]
+            : 'RS';
     }
     /**
      * 解析搜索响应

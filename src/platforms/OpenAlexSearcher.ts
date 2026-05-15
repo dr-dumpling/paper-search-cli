@@ -80,6 +80,22 @@ export class OpenAlexSearcher extends PaperSource {
     throw new Error('OpenAlex provides metadata and OA links only; it does not provide direct full text.');
   }
 
+  async getPaperByDoi(doi: string): Promise<Paper | null> {
+    const cleanDoi = doi.trim().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '');
+    if (!cleanDoi) return null;
+
+    try {
+      const workId = encodeURIComponent(`https://doi.org/${cleanDoi}`);
+      const response = await this.client.get(`/${workId}`);
+      return this.parseWork(response.data as OpenAlexWork);
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return null;
+      }
+      this.handleHttpError(error, 'getPaperByDoi');
+    }
+  }
+
   private parseWork(item: OpenAlexWork): Paper | null {
     const title = item.title || item.display_name || '';
     if (!title) return null;

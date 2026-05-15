@@ -229,13 +229,7 @@ export class ScopusSearcher extends PaperSource {
 
       const response = await ErrorHandler.retryWithBackoff(
         () => this.client.get<ScopusSearchResponse>('/content/search/scopus', {
-          params: {
-            query: searchQuery,
-            count: maxResults,
-            start: 0,
-            view: 'COMPLETE',
-            field: 'dc:identifier,dc:title,dc:creator,prism:publicationName,prism:coverDate,prism:doi,prism:url,prism:volume,prism:issueIdentifier,prism:pageRange,citedby-count,dc:description,authkeywords,author,affiliation,openaccess,eid'
-          }
+          params: this.buildSearchParams(searchQuery, maxResults)
         }),
         { context: 'Scopus search' }
       );
@@ -255,6 +249,29 @@ export class ScopusSearcher extends PaperSource {
     } catch (error: any) {
       this.handleHttpError(error, 'search');
     }
+  }
+
+  private buildSearchParams(searchQuery: string, maxResults: number): Record<string, any> {
+    return {
+      query: searchQuery,
+      count: maxResults,
+      start: 0,
+      field: [
+        'dc:identifier',
+        'eid',
+        'dc:title',
+        'dc:creator',
+        'prism:publicationName',
+        'prism:coverDate',
+        'prism:doi',
+        'prism:url',
+        'prism:volume',
+        'prism:issueIdentifier',
+        'prism:pageRange',
+        'citedby-count',
+        'openaccess'
+      ].join(',')
+    };
   }
 
   private async parseEntry(entry: ScopusEntry): Promise<Paper | null> {

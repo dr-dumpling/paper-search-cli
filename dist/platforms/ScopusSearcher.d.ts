@@ -21,6 +21,7 @@ export declare class ScopusSearcher extends PaperSource {
     private elsevierApiKey?;
     constructor(apiKey?: string, searchApiKey?: string);
     search(query: string, options?: SearchOptions): Promise<Paper[]>;
+    private buildSearchParams;
     private parseEntry;
     getAbstract(scopusId: string): Promise<Paper | null>;
     getCapabilities(): PlatformCapabilities;

@@ -61,6 +61,34 @@ describe('SemanticScholarSearcher', () => {
     });
   });
 
+  describe('PDF URL normalization', () => {
+    it('converts arXiv abstract links to direct PDF links and ignores DOI landing pages', async () => {
+      jest.spyOn(axios, 'get').mockResolvedValue({
+        data: {
+          data: [
+            {
+              paperId: 'paper-1',
+              title: 'Arxiv paper',
+              openAccessPdf: { url: 'https://arxiv.org/abs/2501.06425' },
+              externalIds: { DOI: '10.48550/arXiv.2501.06425' }
+            },
+            {
+              paperId: 'paper-2',
+              title: 'Landing page only',
+              openAccessPdf: { url: 'https://doi.org/10.1016/j.xpro.2022.101947' },
+              externalIds: { DOI: '10.1016/j.xpro.2022.101947' }
+            }
+          ]
+        }
+      } as any);
+
+      const results = await searcher.search('test', { maxResults: 2 });
+
+      expect(results[0].pdfUrl).toBe('https://arxiv.org/pdf/2501.06425');
+      expect(results[1].pdfUrl).toBe('');
+    });
+  });
+
   describe('searchSnippets', () => {
     it('should require SEMANTIC_SCHOLAR_API_KEY', async () => {
       await expect(searcher.searchSnippets({ query: 'mediation bootstrap', limit: 1 })).rejects.toThrow(

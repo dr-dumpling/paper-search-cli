@@ -13,6 +13,8 @@ export declare class EuropePMCSearcher extends PaperSource {
     private parseAuthors;
     private parsePublicationDate;
     private findPdfUrl;
+    private findPdfUrls;
+    private isEuropePmcRenderUrl;
     private findLandingUrl;
 }
 //# sourceMappingURL=EuropePMCSearcher.d.ts.map

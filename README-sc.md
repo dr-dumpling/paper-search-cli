@@ -49,7 +49,7 @@ paper-search search "machine learning" --platform crossref --max-results 3 --pre
 
 安装后运行 `paper-search setup`，即可把可选 API key 和 email 写入用户级配置。
 
-如果仓库仍是私有状态，或 npm 包还没有正式发布，请先从已授权的仓库副本安装：
+如果你需要本地开发版，或要验证尚未发布的改动，可以从源码安装：
 
 ```bash
 git clone git@github.com:dr-dumpling/paper-search-cli.git
@@ -84,7 +84,7 @@ paper-search config doctor --pretty
 | Semantic Scholar | ✅ | ✅ | ✅ 正文片段 | ✅ | 🟡 可选* | AI 语义检索 + OA 正文片段 |
 | CORE | ✅ | 🟡 条件支持 | 🟡 条件支持 | ❌ | 🟡 可选 | 记录含 PDF 或全文链接时可下载 |
 | OpenAIRE | ✅ | 🟡 条件支持 | ❌ | ❌ | 🟡 可选 | 记录含开放链接时可用于回退下载 |
-| Unpaywall | 🟡 条件支持 | 🟡 条件支持 | ❌ | ❌ | ✅ 需要 email | 仅支持 DOI 查询；发现 OA PDF 时可下载 |
+| Unpaywall | 🟡 条件支持 | 🟡 条件支持 | ❌ | ❌ | ✅ 必需 | 仅支持 DOI 查询；需要 email；发现 OA PDF 时可下载 |
 | IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | 密码学论文 |
 | Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | 基于 DOI 查询和下载 |
 | ScienceDirect | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | Elsevier 元数据和摘要 |
@@ -95,11 +95,11 @@ paper-search config doctor --pretty
 说明：
 
 - 能力列中，`✅` 表示直接支持，`❌` 表示不支持，`🟡 条件支持` 表示只在满足条件时可用，例如记录里含 PDF/开放获取链接、只能按 DOI 查询，或只能下载开放获取记录。
-- API Key 列中，`❌` 表示不需要配置，`🟡 可选` 表示不配置也能用但限额或稳定性较弱，`✅ 必需` 表示必须配置。Unpaywall 需要的是 email，不是传统 API key。
+- API Key 列中，`❌` 表示不需要配置，`🟡 可选` 表示不配置也能用但限额或稳定性较弱，`✅ 必需` 表示只在启用该平台时必须配置，不代表新用户默认都要配置。Unpaywall 需要的是 email，不是传统 API key。
 - Wiley TDM API 不支持关键词搜索。应先用 `search_crossref` 找到 Wiley 文章 DOI，再用 `download_paper` 配合 `platform=wiley` 下载。
 - `platform=all` 使用整理过、相对稳定的免费/开放/API 来源：Crossref、OpenAlex、PubMed、PMC、Europe PMC、arXiv、bioRxiv、medRxiv、IACR、CORE、OpenAIRE。它默认不包含 Google Scholar、Sci-Hub、付费 key 平台、DOI-only 的 Unpaywall，以及容易触发限流的 Semantic Scholar。
 - `--sources` 接受逗号分隔来源，例如 `--sources crossref,openalex,pmc`。
-- Semantic Scholar 正文片段检索通过 `search_semantic_snippets` 提供，适合查找方法学细节，需要配置 `SEMANTIC_SCHOLAR_API_KEY`。
+- `🟡 可选*` 对 Semantic Scholar 的含义是：普通检索可选；`search_semantic_snippets` 正文片段检索必需配置 `SEMANTIC_SCHOLAR_API_KEY`。
 
 ## 配置
 
@@ -111,6 +111,7 @@ paper-search config set SEMANTIC_SCHOLAR_API_KEY your_semantic_scholar_api_key_h
 paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com
 paper-search config list --pretty
 paper-search config doctor --pretty
+paper-search diagnostics --pretty
 ```
 
 默认配置路径：
@@ -122,6 +123,25 @@ paper-search config doctor --pretty
 配置文件权限会写成 `0600`。`config list` 和 `config doctor` 会自动脱敏。
 
 `paper-search setup` 是引导式配置命令。默认只询问推荐配置：Semantic Scholar、Unpaywall email、Crossref email 和 CORE。需要遍历所有支持项时使用 `paper-search setup --all`；只想配置指定项时使用 `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY`。
+
+`paper-search diagnostics --pretty` 会列出所有依赖 API key 或 email 的能力、相关配置项、当前是否已配置、常见失败原因和建议排查动作。检索命令在 key-backed 平台返回 0 结果，或遇到 401、403、400、429 时，也会在 JSON 输出里附带 `diagnostic` 字段。
+
+### API key 推荐策略
+
+`paper-search setup` 默认只询问最适合普通新用户先配置的项目。平台表里的 `✅ 必需` 是“使用该平台必需”，不是“所有安装都建议配置”。
+
+| 等级 | 配置项 | 是否建议新用户配置 | 说明 |
+| --- | --- | --- | --- |
+| 默认推荐 | `SEMANTIC_SCHOLAR_API_KEY` | 建议配置 | 开启 Semantic Scholar 正文片段检索，适合方法学细节检索，也能提高请求稳定性。 |
+| 默认推荐 | `PAPER_SEARCH_UNPAYWALL_EMAIL` 或 `UNPAYWALL_EMAIL` | 建议配置 | 用 DOI 查找开放获取 PDF；只需要邮箱，不需要申请 API key。 |
+| 默认推荐 | `CROSSREF_MAILTO` | 建议配置 | 让 Crossref 请求进入 polite pool，适合长期或高频检索。 |
+| 默认推荐 | `CORE_API_KEY` 或 `PAPER_SEARCH_CORE_API_KEY` | 建议配置 | CORE 匿名访问容易限流；配置 key 后更适合开放仓储检索。 |
+| 生物医学高频 | `PUBMED_API_KEY`、`NCBI_EMAIL`、`NCBI_TOOL` | 经常用 PubMed 时建议配置 | 提高 NCBI E-utilities 限额，并让请求带上明确客户端信息。 |
+| 机构权限型 | `WOS_API_KEY` | 有 Web of Science API 权限再配置 | 用于 Web of Science 检索和引文数据；需要 Clarivate API 权限。 |
+| 机构权限型 | `ELSEVIER_API_KEY` | 有 Scopus 或 ScienceDirect API 权限再配置 | 同一个 Elsevier key 不等于自动拥有两个产品权限，Scopus 和 ScienceDirect 需要分别开通。 |
+| 机构权限型 | `SPRINGER_API_KEY`、`SPRINGER_OPENACCESS_API_KEY` | 需要 Springer 平台时再配置 | 用于 Springer 元数据和开放获取记录；401 通常表示 key 无效或产品权限未开通。 |
+| 机构权限型 | `WILEY_TDM_TOKEN` | 有 Wiley TDM/机构全文权限再配置 | 仅支持 DOI 下载；能否下载取决于 token 和机构订阅权限。 |
+| 通常不用 | `PAPER_SEARCH_OPENAIRE_API_KEY` 或 `OPENAIRE_API_KEY` | 不建议默认配置 | OpenAIRE 公开检索通常无需 key；只有账号或配额要求时再配置。 |
 
 也可以从现有 `.env` 导入：
 
@@ -154,10 +174,10 @@ PUBMED_API_KEY=your_ncbi_api_key_here
 NCBI_EMAIL=you@example.com
 NCBI_TOOL=paper-search-cli
 
-# Semantic Scholar，可选；提升请求限额
+# Semantic Scholar，正文片段检索必需，也可提升请求限额
 SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
 
-# Elsevier，ScienceDirect 和 Scopus 必需
+# Elsevier，Scopus 和 ScienceDirect 必需；两个产品仍需要分别开通权限
 ELSEVIER_API_KEY=your_elsevier_api_key_here
 
 # Springer Nature，Springer 检索和开放获取下载必需
@@ -314,6 +334,16 @@ paper-search status --validate --pretty
 ```
 
 `--validate` 可能会向平台发起实时请求，只在确实需要验证凭证时使用。
+
+### `paper-search diagnostics`
+
+查看依赖 API key / email 的能力和排障建议。不会打印密钥内容。
+
+```bash
+paper-search diagnostics --pretty
+```
+
+当命令在已配置 key 的平台返回 0 结果，或遇到 401、403、400、429 时，JSON 输出会包含 `diagnostic` 字段，说明可能原因和下一步操作。
 
 ### `paper-search config`
 

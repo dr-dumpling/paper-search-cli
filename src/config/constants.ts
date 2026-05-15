@@ -17,6 +17,8 @@ export const TIMEOUTS = {
   DOWNLOAD: 120000,
   /** Timeout for batch operations */
   BATCH: 90000,
+  /** Per-source timeout for fan-out operations */
+  SOURCE_TASK: 15000,
   /** Timeout buffer for withTimeout wrapper */
   BUFFER: 5000
 } as const;

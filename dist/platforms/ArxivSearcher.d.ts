@@ -13,6 +13,24 @@ export declare class ArxivSearcher extends PaperSource {
      * 搜索arXiv论文
      */
     search(query: string, options?: SearchOptions): Promise<Paper[]>;
+    private searchViaExportApi;
+    private fetchSearchPage;
+    private normalizeMaxResults;
+    private isTimeoutError;
+    private shouldUseWebFallback;
+    private isRateLimitError;
+    private waitForGlobalExportApiSlot;
+    private markGlobalExportApiCooldown;
+    private withArxivRateLimitLock;
+    private acquireArxivRateLimitLock;
+    private removeStaleArxivRateLimitLock;
+    private getArxivRateLimitPaths;
+    private readArxivRateLimitState;
+    private writeArxivRateLimitState;
+    private createArxivCooldownError;
+    private sleep;
+    private searchViaWebFallback;
+    private parseWebSearchResponse;
     /**
      * 下载PDF文件
      */
@@ -25,6 +43,11 @@ export declare class ArxivSearcher extends PaperSource {
      * 构建搜索查询
      */
     private buildSearchQuery;
+    private normalizeSearchQuery;
+    private hasArxivQuerySyntax;
+    private escapeArxivTerm;
+    private webFallbackPageSize;
+    private mapWebSortOrder;
     /**
      * 映射排序字段
      */

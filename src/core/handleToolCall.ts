@@ -3,9 +3,11 @@ import type { ToolName } from './schemas.js';
 import { parseToolArgs } from './schemas.js';
 import { PaperFactory, type Paper } from '../models/Paper.js';
 import { PaperSource, type SearchOptions } from '../platforms/PaperSource.js';
+import { TIMEOUTS } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
 import { searchMultipleSources } from '../services/MultiSourceSearchService.js';
 import { downloadWithFallback } from '../services/OpenAccessFallbackService.js';
+import { withTimeout } from '../utils/SecurityUtils.js';
 
 function jsonTextResponse(text: string) {
   return {
@@ -16,6 +18,29 @@ function jsonTextResponse(text: string) {
       }
     ]
   };
+}
+
+const DOI_LOOKUP_SOURCES = [
+  'crossref',
+  'openalex',
+  'unpaywall',
+  'pubmed',
+  'pmc',
+  'europepmc',
+  'core',
+  'webofscience',
+  'arxiv'
+] as const;
+
+function normalizeDoi(value: string): string {
+  return value
+    .trim()
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')
+    .toLowerCase();
+}
+
+function paperMatchesDoi(paper: Paper, doi: string): boolean {
+  return normalizeDoi(paper.doi || '') === normalizeDoi(doi);
 }
 
 export async function handleToolCall(
@@ -272,18 +297,51 @@ export async function handleToolCall(
     case 'get_paper_by_doi': {
       const { doi, platform } = args;
       const results: Record<string, any>[] = [];
+      const sourceResults: Record<string, number> = {};
+      const errors: Record<string, string> = {};
+      const failedSources: string[] = [];
 
       if (platform === 'all') {
-        for (const [platformName, searcher] of Object.entries(searchers)) {
-          if (platformName === 'wos' || platformName === 'scholar') continue;
-          try {
-            const paper = await (searcher as PaperSource).getPaperByDoi(doi);
-            if (paper) {
-              results.push(PaperFactory.toDict(paper));
-            }
-          } catch (error) {
-            logDebug(`Error getting paper by DOI from ${platformName}:`, error);
+        const selected = DOI_LOOKUP_SOURCES.filter(source => source in searchers);
+        const settled = await Promise.allSettled(
+          selected.map(async source => {
+            const searcher = (searchers as any)[source] as PaperSource;
+            const paper = await withTimeout(
+              searcher.getPaperByDoi(doi),
+              TIMEOUTS.SOURCE_TASK,
+              `${source} DOI lookup timed out after ${TIMEOUTS.SOURCE_TASK}ms`
+            );
+            return { source, paper };
+          })
+        );
+
+        for (let i = 0; i < settled.length; i += 1) {
+          const source = selected[i];
+          const result = settled[i];
+
+          if (result.status === 'rejected') {
+            sourceResults[source] = 0;
+            errors[source] = result.reason?.message || String(result.reason);
+            failedSources.push(source);
+            logDebug(`Error getting paper by DOI from ${source}:`, result.reason);
+            continue;
           }
+
+          const paper = result.value.paper;
+          if (!paper) {
+            sourceResults[source] = 0;
+            continue;
+          }
+
+          if (!paperMatchesDoi(paper, doi)) {
+            sourceResults[source] = 0;
+            errors[source] = `Returned DOI ${paper.doi || '(missing)'} did not match requested DOI ${doi}`;
+            failedSources.push(source);
+            continue;
+          }
+
+          sourceResults[source] = 1;
+          results.push(PaperFactory.toDict(paper));
         }
       } else {
         const searcher = (searchers as any)[platform];
@@ -297,7 +355,35 @@ export async function handleToolCall(
       }
 
       if (results.length === 0) {
+        if (platform === 'all') {
+          const result = {
+            doi,
+            sources_requested: 'all',
+            sources_used: DOI_LOOKUP_SOURCES.filter(source => source in searchers),
+            source_results: sourceResults,
+            errors,
+            failed_sources: failedSources,
+            warnings: failedSources.map(source => `${source}: ${errors[source]}`),
+            total: 0,
+            papers: []
+          };
+          return jsonTextResponse(`No paper found with DOI: ${doi}\n\n${JSON.stringify(result, null, 2)}`);
+        }
         return jsonTextResponse(`No paper found with DOI: ${doi}`);
+      }
+      if (platform === 'all') {
+        const result = {
+          doi,
+          sources_requested: 'all',
+          sources_used: DOI_LOOKUP_SOURCES.filter(source => source in searchers),
+          source_results: sourceResults,
+          errors,
+          failed_sources: failedSources,
+          warnings: failedSources.map(source => `${source}: ${errors[source]}`),
+          total: results.length,
+          papers: results
+        };
+        return jsonTextResponse(`Found ${results.length} paper(s) with DOI ${doi} across ${result.sources_used.length} source(s).\n\n${JSON.stringify(result, null, 2)}`);
       }
       return jsonTextResponse(`Found ${results.length} paper(s) with DOI ${doi}:\n\n${JSON.stringify(results, null, 2)}`);
     }

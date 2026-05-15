@@ -58,6 +58,38 @@ describe('WebOfScienceSearcher', () => {
     it('should handle search options', () => {
       expect(searcher.search).toBeDefined();
     });
+
+    it('should use Web of Science Starter-supported sort fields', () => {
+      const relevanceParams = (searcher as any).buildSearchQuery('machine learning', {
+        maxResults: 1,
+        sortBy: 'relevance',
+        sortOrder: 'desc'
+      });
+      const dateParams = (searcher as any).buildSearchQuery('machine learning', {
+        maxResults: 1,
+        sortBy: 'date',
+        sortOrder: 'desc'
+      });
+      const citationParams = (searcher as any).buildSearchQuery('machine learning', {
+        maxResults: 1,
+        sortBy: 'citations',
+        sortOrder: 'asc'
+      });
+
+      expect(relevanceParams.sortField).toBe('RS DESC');
+      expect(dateParams.sortField).toBe('PY DESC');
+      expect(citationParams.sortField).toBe('TC ASC');
+    });
+
+    it('should omit unsupported sort fields instead of sending invalid field tags', () => {
+      const params = (searcher as any).buildSearchQuery('machine learning', {
+        maxResults: 1,
+        sortBy: 'title',
+        sortOrder: 'desc'
+      });
+
+      expect(params.sortField).toBeUndefined();
+    });
   });
 
   describe('API version fallback', () => {
