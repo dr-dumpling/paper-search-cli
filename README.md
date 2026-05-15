@@ -47,7 +47,7 @@ paper-search setup
 paper-search search "machine learning" --platform crossref --max-results 3 --pretty
 ```
 
-GitHub installation runs the package `prepare` script and builds the CLI automatically. If npm hides lifecycle output, the first `paper-search status --pretty` run still points users to setup.
+The GitHub install includes the built CLI. Run `paper-search setup` after installation to write optional API keys and emails into the user config.
 
 ### Common Checks
 

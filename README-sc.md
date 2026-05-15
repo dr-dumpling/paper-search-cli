@@ -47,7 +47,7 @@ paper-search setup
 paper-search search "machine learning" --platform crossref --max-results 3 --pretty
 ```
 
-GitHub 安装会运行 package 的 `prepare` 脚本并自动构建 CLI。若 npm 隐藏安装阶段提示，首次运行 `paper-search status --pretty` 仍会提示配置入口。
+GitHub 安装包已经包含构建后的 CLI。安装后运行 `paper-search setup`，即可把可选 API key 和 email 写入用户级配置。
 
 ### 常用检查
 

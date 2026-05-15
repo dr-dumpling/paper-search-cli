@@ -16,12 +16,10 @@
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
-    "postinstall": "node scripts/postinstall.cjs",
     "prepublishOnly": "npm test -- --runInBand && npm run build"
   },
   "files": [
     "dist/",
-    "scripts/postinstall.cjs",
     "README.md",
     "README-sc.md",
     "skills/",
