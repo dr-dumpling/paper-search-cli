@@ -10,7 +10,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 感谢真诚、友善、团结、专业的 [LinuxDo](https://linux.do) 社区。本项目的 CLI + Skill 路线和论文检索工作流改进，来自社区交流与开源分享的启发。
@@ -126,6 +126,8 @@ paper-search diagnostics --pretty
 配置文件权限会写成 `0600`。`config list` 和 `config doctor` 会自动脱敏。
 
 `paper-search setup` 是引导式配置命令。默认只询问推荐配置：Semantic Scholar、Unpaywall email、Crossref email 和 CORE。需要遍历所有支持项时使用 `paper-search setup --all`；只想配置指定项时使用 `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY`。
+
+为降低首次配置成本，如果 `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMAIL` / `CROSSREF_MAILTO` 尚未配置，setup 时直接回车会自动写入一个随机前缀的 Gmail 格式邮箱，例如 `paper.search.xxxxxx@gmail.com`，用于让 Unpaywall 和 Crossref 的基础请求能直接运行。
 
 `paper-search diagnostics --pretty` 会列出所有依赖 API key 或 email 的能力、相关配置项、当前是否已配置、常见失败原因和建议排查动作。检索命令在 key-backed 平台返回 0 结果，或遇到 401、403、400、429 时，也会在 JSON 输出里附带 `diagnostic` 字段。
 

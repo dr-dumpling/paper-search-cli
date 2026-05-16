@@ -10,7 +10,7 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https://linux.do) community. The CLI + Skill direction and the paper-search workflow refinements in this project were shaped by LinuxDo discussions and open-source sharing.
@@ -126,6 +126,8 @@ The default config path is:
 The file is written with `0600` permissions. `config list` and `config doctor` mask secrets.
 
 `paper-search setup` is the guided setup command. By default it asks for the recommended credentials only: Semantic Scholar, Unpaywall email, Crossref email, and CORE. Use `paper-search setup --all` to walk through every supported configuration key, or `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY` to configure a specific subset.
+
+To reduce first-run friction, if `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMAIL` / `CROSSREF_MAILTO` are not configured, pressing Enter during setup writes a random Gmail-format address such as `paper.search.xxxxxx@gmail.com`, so basic Unpaywall and Crossref requests can run immediately.
 
 `paper-search diagnostics --pretty` lists every API-key or email-backed capability, the related config keys, whether the required keys are configured, common failure modes, and suggested next checks. Search commands also add a `diagnostic` field when a key-backed platform returns zero results or an auth/permission/rate-limit error.
 
