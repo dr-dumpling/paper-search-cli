@@ -11,6 +11,9 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+[![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
+
+感谢真诚、友善、团结、专业的 [LinuxDo](https://linux.do) 社区。本项目的 CLI + Skill 路线和论文检索工作流改进，来自社区交流与开源分享的启发。
 
 [快速开始](#快速开始) · [配置](#配置) · [Agent Skill](#agent-skill) · [支持的平台](#支持的平台) · [命令](#命令) · [工具参考](#工具参考) · [排障](#排障)
 
@@ -635,7 +638,11 @@ paper-search config doctor --pretty
 
 ## 项目来源
 
-本项目是参考 [openags/paper-search-mcp](https://github.com/openags/paper-search-mcp) 的独立 CLI 改写版本。当前定位是单命令终端工具，不需要 MCP 运行时。
+本项目认可并感谢 [LinuxDo](https://linux.do) 社区。
+
+本项目的 CLI + Skill 路线和论文检索工作流改进，来自社区交流与开源分享的启发。当前定位是单命令终端工具，不需要 MCP 运行时。
+
+项目也参考了 [openags/paper-search-mcp](https://github.com/openags/paper-search-mcp) 的相关思路，并将工作流适配为独立 CLI。
 
 ## License
 

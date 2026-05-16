@@ -11,6 +11,9 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+[![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
+
+Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https://linux.do) community. The CLI + Skill direction and the paper-search workflow refinements in this project were shaped by LinuxDo discussions and open-source sharing.
 
 [Quick Start](#quick-start) · [Configuration](#configuration) · [Agent Skill](#agent-skill) · [Supported Platforms](#supported-platforms) · [Commands](#commands) · [Tool Reference](#tool-reference) · [Troubleshooting](#troubleshooting)
 
@@ -635,7 +638,11 @@ Some sources may be subject to platform terms, institutional subscriptions, or l
 
 ## Project Origin
 
-This project is a standalone CLI adaptation inspired by [openags/paper-search-mcp](https://github.com/openags/paper-search-mcp). It keeps the paper-search workflow focused on a one-command terminal tool and does not require an MCP runtime.
+This project acknowledges and thanks the [LinuxDo](https://linux.do) community.
+
+The CLI + Skill direction and paper-search workflow refinements were shaped by community discussions and open-source sharing. This repository keeps the workflow focused on a one-command terminal tool and does not require an MCP runtime.
+
+It also references ideas from [openags/paper-search-mcp](https://github.com/openags/paper-search-mcp) while adapting the workflow to a standalone CLI.
 
 ## License
 
