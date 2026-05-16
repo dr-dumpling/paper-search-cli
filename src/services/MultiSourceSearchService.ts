@@ -26,9 +26,17 @@ const DEFAULT_ALL_SOURCES = [
   'arxiv',
   'biorxiv',
   'medrxiv',
+  'semantic',
   'iacr',
   'core',
-  'openaire'
+  'openaire',
+  'googlescholar',
+  'webofscience',
+  'sciencedirect',
+  'springer',
+  'scopus',
+  'scihub',
+  'unpaywall'
 ];
 const ALIASES: Record<string, string> = {
   google_scholar: 'googlescholar',

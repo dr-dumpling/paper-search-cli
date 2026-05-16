@@ -10,7 +10,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 感谢真诚、友善、团结、专业的 [LinuxDo](https://linux.do) 社区。本项目的 CLI + Skill 路线和论文检索工作流改进，来自社区交流与开源分享的启发。
@@ -31,7 +31,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 - **单一命令入口**：安装后通过 `paper-search` 调用，适合终端、脚本和 agent。
 - **JSON 优先输出**：stdout 默认输出 JSON，stderr 保留给人类可读日志和错误。
 - **统一论文数据模型**：标准化标题、作者、DOI、来源、日期、摘要、PDF 链接、引用数和平台扩展字段。
-- **多源检索与去重**：用 `--sources crossref,openalex,pmc` 选择来源，或用整理过的 `platform=all`，再按 DOI、标题+作者合并重复结果。
+- **多源检索与去重**：用 `--sources crossref,openalex,pmc` 选择来源，或用 `platform=all` 尝试所有已注册检索来源，再按 DOI、标题+作者合并重复结果。
 - **Semantic Scholar 正文片段检索**：`search_semantic_snippets` 用于检索 Semantic Scholar Open Access snippet 索引中的正文片段，适合查找论文中的方法学细节。该功能需要 `SEMANTIC_SCHOLAR_API_KEY`。
 - **开放获取优先下载链**：`download_with_fallback` 会先尝试原生下载、结果里的 PDF URL、PMC/Europe PMC/CORE/OpenAIRE、Unpaywall DOI 解析，只有显式开启时才把 Sci-Hub 作为最后兜底。
 - **限速与重试**：内置平台级限速和可重试 API 错误处理。
@@ -100,7 +100,7 @@ paper-search config doctor --pretty
 - 能力列中，`✅` 表示直接支持，`❌` 表示不支持，`🟡 条件支持` 表示只在满足条件时可用，例如记录里含 PDF/开放获取链接、只能按 DOI 查询，或只能下载开放获取记录。
 - API Key 列中，`❌` 表示不需要配置，`🟡 可选` 表示不配置也能用但限额或稳定性较弱，`✅ 必需` 表示只在启用该平台时必须配置，不代表新用户默认都要配置。Unpaywall 需要的是 email，不是传统 API key。
 - Wiley TDM API 不支持关键词搜索。应先用 `search_crossref` 找到 Wiley 文章 DOI，再用 `download_paper` 配合 `platform=wiley` 下载。
-- `platform=all` 使用整理过、相对稳定的免费/开放/API 来源：Crossref、OpenAlex、PubMed、PMC、Europe PMC、arXiv、bioRxiv、medRxiv、IACR、CORE、OpenAIRE。它默认不包含 Google Scholar、Sci-Hub、付费 key 平台、DOI-only 的 Unpaywall，以及容易触发限流的 Semantic Scholar。
+- `platform=all` 会尝试所有已注册检索来源，但不包含 Wiley 这类只支持 DOI 下载、不能关键词搜索的平台。未配置 key、超时或请求失败的来源会写入 `failed_sources` / `errors`，其他来源继续返回。
 - `--sources` 接受逗号分隔来源，例如 `--sources crossref,openalex,pmc`。
 - `🟡 可选*` 对 Semantic Scholar 的含义是：普通检索可选；`search_semantic_snippets` 正文片段检索必需配置 `SEMANTIC_SCHOLAR_API_KEY`。
 

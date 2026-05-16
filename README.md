@@ -10,7 +10,7 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https://linux.do) community. The CLI + Skill direction and the paper-search workflow refinements in this project were shaped by LinuxDo discussions and open-source sharing.
@@ -31,7 +31,7 @@ Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https
 - **Single command interface**: install once, then call `paper-search` from terminal, scripts, or agents.
 - **JSON-first output**: stdout is machine-readable JSON by default; stderr is reserved for human-readable diagnostics.
 - **Unified paper model**: normalized title, authors, DOI, source, dates, abstract, PDF URL, citation count, and provider-specific metadata where available.
-- **Multi-source search with dedupe**: query selected sources with `--sources crossref,openalex,pmc`, or use curated `platform=all`, then merge duplicates by DOI and title/author keys.
+- **Multi-source search with dedupe**: query selected sources with `--sources crossref,openalex,pmc`, or use `platform=all` to try every registered search source, then merge duplicates by DOI and title/author keys.
 - **Semantic Scholar body-snippet search**: `search_semantic_snippets` searches Semantic Scholar's Open Access snippet index for body-text snippets, which is useful for finding methodological details. It requires `SEMANTIC_SCHOLAR_API_KEY`.
 - **Open-access-first fallback download**: `download_with_fallback` tries native source download, discovered PDF URLs, PMC/Europe PMC/CORE/OpenAIRE, Unpaywall DOI resolution, then optional Sci-Hub only when explicitly enabled.
 - **Rate limits and retry logic**: platform-specific rate limiting and retryable API error handling.
@@ -100,7 +100,7 @@ Notes:
 - In capability columns, `✅` means directly supported, `❌` means unsupported, and `🟡 Conditional` means support depends on record content or provider constraints, such as DOI-only lookup, available PDF/OA links, or open-access-only downloads.
 - In the API Key column, `❌` means no configuration is needed, `🟡 Optional` means configuration improves limits or stability, and `✅ Required` means the key is required only when you use that platform, not that every new installation should configure it. Unpaywall requires an email rather than a traditional API key.
 - Wiley does not support keyword search through the Wiley TDM API. Use `search_crossref` to find Wiley articles and then use `download_paper` with `platform=wiley` and the DOI.
-- `platform=all` uses a curated fan-out across the more stable free/open/API sources: Crossref, OpenAlex, PubMed, PMC, Europe PMC, arXiv, bioRxiv, medRxiv, IACR, CORE, and OpenAIRE. It intentionally excludes Google Scholar, Sci-Hub, paid-key sources, DOI-only Unpaywall, and rate-limit-prone Semantic Scholar unless requested explicitly.
+- `platform=all` tries every registered search source except DOI-download-only providers such as Wiley. Sources without configured credentials, sources that time out, and sources that fail are recorded in `failed_sources` / `errors` while the remaining sources continue.
 - `--sources` accepts a comma-separated source list, for example `--sources crossref,openalex,pmc`.
 - `🟡 Optional*` for Semantic Scholar means optional for regular search; `search_semantic_snippets` body-snippet search requires `SEMANTIC_SCHOLAR_API_KEY`.
 

@@ -36,7 +36,7 @@ describe('MultiSourceSearchService', () => {
       expect(parseSourceList(undefined, searchers)).toEqual(['crossref']);
     });
 
-    it('uses a conservative curated source list for all', () => {
+    it('uses all registered search sources for all', () => {
       const sources = parseSourceList('all', searchers);
 
       expect(sources).toEqual([
@@ -48,14 +48,21 @@ describe('MultiSourceSearchService', () => {
         'arxiv',
         'biorxiv',
         'medrxiv',
+        'semantic',
         'iacr',
         'core',
-        'openaire'
+        'openaire',
+        'googlescholar',
+        'webofscience',
+        'sciencedirect',
+        'springer',
+        'scopus',
+        'scihub',
+        'unpaywall'
       ]);
-      expect(sources).not.toContain('googlescholar');
-      expect(sources).not.toContain('scihub');
-      expect(sources).not.toContain('semantic');
-      expect(sources).not.toContain('unpaywall');
+      expect(sources).not.toContain('wos');
+      expect(sources).not.toContain('scholar');
+      expect(sources).not.toContain('wiley');
     });
 
     it('normalizes aliases, removes duplicates, and drops unknown sources', () => {

@@ -36,7 +36,7 @@ export const TOOLS = [
                 },
                 sources: {
                     type: 'string',
-                    description: 'Comma-separated source list for multi-source search, or all for non-risky open/API sources. Example: crossref,openalex,pubmed,pmc'
+                    description: 'Comma-separated source list for multi-source search, or all for every registered search source except DOI-download-only providers. Failed or unconfigured sources are reported in failed_sources/errors. Example: crossref,openalex,pubmed,pmc'
                 },
                 maxResults: {
                     type: 'number',

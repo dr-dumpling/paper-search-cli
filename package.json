@@ -1,6 +1,6 @@
 {
   "name": "paper-search-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Agent-friendly CLI for searching and downloading academic papers from multiple sources.",
   "main": "dist/cli.js",
   "type": "module",
