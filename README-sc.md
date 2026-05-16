@@ -51,6 +51,7 @@ paper-search search "machine learning" --platform crossref --max-results 3 --pre
 ```
 
 安装后运行 `paper-search setup`，即可把可选 API key 和 email 写入用户级配置。
+其中 Unpaywall 和 Crossref 的邮箱项可以直接回车跳过，CLI 会自动写入一个随机前缀的 Gmail 格式邮箱；如果你想使用自己的邮箱，后续再用 `paper-search config set` 覆盖即可。
 
 如果你需要本地开发版，或要验证尚未发布的改动，可以从源码安装：
 
@@ -111,7 +112,7 @@ paper-search config doctor --pretty
 ```bash
 paper-search setup
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_semantic_scholar_api_key_here
-paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com
+paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com  # 可选：手动覆盖 setup 自动生成的邮箱
 paper-search config list --pretty
 paper-search config doctor --pretty
 paper-search diagnostics --pretty
@@ -138,8 +139,8 @@ paper-search diagnostics --pretty
 | 等级 | 配置项 | 是否建议新用户配置 | 说明 |
 | --- | --- | --- | --- |
 | 默认推荐 | `SEMANTIC_SCHOLAR_API_KEY` | 建议配置 | 开启 Semantic Scholar 正文片段检索，适合方法学细节检索，也能提高请求稳定性。 |
-| 默认推荐 | `PAPER_SEARCH_UNPAYWALL_EMAIL` 或 `UNPAYWALL_EMAIL` | 建议配置 | 用 DOI 查找开放获取 PDF；只需要邮箱，不需要申请 API key。 |
-| 默认推荐 | `CROSSREF_MAILTO` | 建议配置 | 让 Crossref 请求进入 polite pool，适合长期或高频检索。 |
+| 默认推荐 | `PAPER_SEARCH_UNPAYWALL_EMAIL` 或 `UNPAYWALL_EMAIL` | 建议配置 | 用 DOI 查找开放获取 PDF；只需要邮箱，不需要申请 API key。`setup` 直接回车会自动生成随机 Gmail 格式邮箱，也可以手动换成自己的邮箱。 |
+| 默认推荐 | `CROSSREF_MAILTO` | 建议配置 | 让 Crossref 请求进入 polite pool，适合长期或高频检索。`setup` 直接回车会复用自动生成的邮箱，也可以手动换成自己的邮箱。 |
 | 默认推荐 | `CORE_API_KEY` 或 `PAPER_SEARCH_CORE_API_KEY` | 建议配置 | CORE 匿名访问容易限流；配置 key 后更适合开放仓储检索。 |
 | 生物医学高频 | `PUBMED_API_KEY`、`NCBI_EMAIL`、`NCBI_TOOL` | 经常用 PubMed 时建议配置 | 提高 NCBI E-utilities 限额，并让请求带上明确客户端信息。 |
 | 机构权限型 | `WOS_API_KEY` | 有 Web of Science API 权限再配置 | 用于 Web of Science 检索和引文数据；需要 Clarivate API 权限。 |
@@ -192,10 +193,10 @@ SPRINGER_OPENACCESS_API_KEY=your_openaccess_api_key_here
 # Wiley TDM，Wiley DOI 下载必需
 WILEY_TDM_TOKEN=your_wiley_tdm_token_here
 
-# Crossref polite pool，可选但推荐
+# Crossref polite pool，可选但推荐；setup 直接回车会自动生成/复用随机 Gmail 格式邮箱
 CROSSREF_MAILTO=you@example.com
 
-# Unpaywall，DOI 开放获取解析必需
+# Unpaywall，DOI 开放获取解析必需；setup 直接回车会自动生成随机 Gmail 格式邮箱
 PAPER_SEARCH_UNPAYWALL_EMAIL=you@example.com
 UNPAYWALL_EMAIL=you@example.com
 
@@ -357,7 +358,7 @@ paper-search diagnostics --pretty
 ```bash
 paper-search config init --pretty
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_key --pretty
-paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com --pretty
+paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com --pretty  # 可选：手动覆盖 setup 自动生成的邮箱
 paper-search config import-env .env --pretty
 paper-search config list --pretty
 paper-search config doctor --pretty

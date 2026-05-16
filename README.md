@@ -51,6 +51,7 @@ paper-search search "machine learning" --platform crossref --max-results 3 --pre
 ```
 
 Run `paper-search setup` after installation to write optional API keys and emails into the user config.
+For the Unpaywall and Crossref email prompts, you can press Enter and the CLI will write a random Gmail-format address automatically; use `paper-search config set` later if you want to replace it with your own email.
 
 For local development, or to test changes that have not been released yet, install from source:
 
@@ -111,7 +112,7 @@ Most free metadata sources work without configuration. For API keys and emails, 
 ```bash
 paper-search setup
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_semantic_scholar_api_key_here
-paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com
+paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com  # optional: replace the setup-generated email
 paper-search config list --pretty
 paper-search config doctor --pretty
 paper-search diagnostics --pretty
@@ -138,8 +139,8 @@ To reduce first-run friction, if `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMA
 | Level | Config keys | Recommended for new users | Notes |
 | --- | --- | --- | --- |
 | Default recommended | `SEMANTIC_SCHOLAR_API_KEY` | Yes | Enables Semantic Scholar body-snippet search for methodology details and improves request stability. |
-| Default recommended | `PAPER_SEARCH_UNPAYWALL_EMAIL` or `UNPAYWALL_EMAIL` | Yes | Finds open-access PDFs from DOI records; this only needs an email, not an API key. |
-| Default recommended | `CROSSREF_MAILTO` | Yes | Puts Crossref requests in the polite pool, which is better for long-running or frequent searches. |
+| Default recommended | `PAPER_SEARCH_UNPAYWALL_EMAIL` or `UNPAYWALL_EMAIL` | Yes | Finds open-access PDFs from DOI records; this only needs an email, not an API key. Press Enter in `setup` to generate a random Gmail-format email, or replace it manually. |
+| Default recommended | `CROSSREF_MAILTO` | Yes | Puts Crossref requests in the polite pool, which is better for long-running or frequent searches. Press Enter in `setup` to reuse the generated email, or replace it manually. |
 | Default recommended | `CORE_API_KEY` or `PAPER_SEARCH_CORE_API_KEY` | Yes | CORE anonymous access is often rate-limited; a key makes open repository search more reliable. |
 | Biomedical-heavy use | `PUBMED_API_KEY`, `NCBI_EMAIL`, `NCBI_TOOL` | Recommended if you use PubMed heavily | Raises NCBI E-utilities limits and identifies the client. |
 | Institution entitlement | `WOS_API_KEY` | Configure only with Web of Science API access | Enables Web of Science search and citation data; requires Clarivate API entitlement. |
@@ -192,10 +193,10 @@ SPRINGER_OPENACCESS_API_KEY=your_openaccess_api_key_here
 # Wiley TDM, required for Wiley DOI-based PDF download
 WILEY_TDM_TOKEN=your_wiley_tdm_token_here
 
-# Crossref polite pool, optional but recommended
+# Crossref polite pool, optional but recommended; setup can auto-generate/reuse a random Gmail-format email
 CROSSREF_MAILTO=you@example.com
 
-# Unpaywall, required for DOI-based OA resolution
+# Unpaywall, required for DOI-based OA resolution; setup can auto-generate a random Gmail-format email
 PAPER_SEARCH_UNPAYWALL_EMAIL=you@example.com
 UNPAYWALL_EMAIL=you@example.com
 
@@ -357,7 +358,7 @@ Manage the user-level config file.
 ```bash
 paper-search config init --pretty
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_key --pretty
-paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com --pretty
+paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com --pretty  # optional: replace the setup-generated email
 paper-search config import-env .env --pretty
 paper-search config list --pretty
 paper-search config doctor --pretty
