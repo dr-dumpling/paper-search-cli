@@ -26,7 +26,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ## 核心特性
 
 - **25 个学术来源/平台**：Crossref、OpenAlex、PubMed、PubMed Central、Europe PMC、arXiv、bioRxiv、medRxiv、Semantic Scholar、CORE、OpenAIRE、DBLP、ACM Digital Library 元数据、USENIX 元数据、OpenReview、Web of Science、Google Scholar、IACR ePrint、Sci-Hub、IEEE Xplore、ScienceDirect、Springer Nature/SpringerLink、Wiley、Scopus、Unpaywall。
-- **EasyScholar 影响因子与期刊分区检索**：检索影响因子、5 年影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警字段，以及可选的官方/自定义原始等级字段等。
+- **影响因子与期刊分区检索**：通过 EasyScholar，检索影响因子、5 年影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警字段，以及可选的官方/自定义原始等级字段等。
 - **PDF 下载支持**：支持 arXiv、bioRxiv、medRxiv、Semantic Scholar、IACR、Sci-Hub、Springer 开放获取、Wiley DOI 下载等路径。
 - **正文片段检索**：用于检索论文正文片段，数据来源于 Semantic Scholar 中，适合查找论文中的方法学细节等。
 - **适合 agent 调用**：`tools`、`status`、`search`、`journal-metrics`、`download`、`run` 覆盖简单检索和精确工具调用。

@@ -26,9 +26,9 @@ Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https
 ## Key Features
 
 - **25 academic sources/platforms**: Crossref, OpenAlex, PubMed, PubMed Central, Europe PMC, arXiv, bioRxiv, medRxiv, Semantic Scholar, CORE, OpenAIRE, DBLP, ACM Digital Library metadata, USENIX metadata, OpenReview, Web of Science, Google Scholar, IACR ePrint, Sci-Hub, IEEE Xplore, ScienceDirect, Springer Nature/SpringerLink, Wiley, Scopus, and Unpaywall.
-- **EasyScholar impact factor and journal quartile lookup**: through EasyScholar, query impact factor, 5-year impact factor, JCR/SSCI quartiles, CAS zones, JCI, ESI, warning flags, and optional raw official/custom rank fields.
+- **Impact factor and journal quartile lookup**: through EasyScholar, query impact factor, 5-year impact factor, JCR/SSCI quartiles, CAS zones, JCI, ESI, warning flags, and optional raw official/custom rank fields.
 - **PDF download support**: download from supported sources such as arXiv, bioRxiv, medRxiv, Semantic Scholar, IACR, Sci-Hub, Springer open access, and Wiley DOI-based access.
-- **Body snippet search**: search paper body snippets from Semantic Scholar, useful for finding methodological details.
+- **Body snippet search**: search paper body snippets from Semantic Scholar, useful for finding methodological details and related evidence.
 - **Agent-friendly commands**: `tools`, `status`, `search`, `journal-metrics`, `download`, and `run` cover both simple use and precise advanced calls.
 
 ## Quick Start
