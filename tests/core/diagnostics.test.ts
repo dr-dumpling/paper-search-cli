@@ -16,7 +16,6 @@ describe('diagnostics', () => {
     delete process.env.WOS_API_KEY;
     delete process.env.IEEE_API_KEY;
     delete process.env.EASYSCHOLAR_KEY;
-    delete process.env.PAPER_SEARCH_EASYSCHOLAR_KEY;
   });
 
   it('should report key-dependent capabilities and configuration state', () => {
@@ -36,17 +35,17 @@ describe('diagnostics', () => {
 
     const easyscholar = requirements.find(item => item.id === 'easyscholar');
     expect(easyscholar?.configured).toBe(false);
-    expect(easyscholar?.missingGroups).toEqual([['EASYSCHOLAR_KEY', 'PAPER_SEARCH_EASYSCHOLAR_KEY']]);
+    expect(easyscholar?.missingGroups).toEqual([['EASYSCHOLAR_KEY']]);
   });
 
-  it('should report EasyScholar journal metrics as configured when either supported key exists', () => {
-    process.env.PAPER_SEARCH_EASYSCHOLAR_KEY = 'test-key';
+  it('should report EasyScholar journal metrics as configured when the canonical key exists', () => {
+    process.env.EASYSCHOLAR_KEY = 'test-key';
 
     const requirements = getRequirementStatus();
     const easyscholar = requirements.find(item => item.id === 'easyscholar');
 
     expect(easyscholar?.configured).toBe(true);
-    expect(easyscholar?.configuredGroups).toEqual([['EASYSCHOLAR_KEY', 'PAPER_SEARCH_EASYSCHOLAR_KEY']]);
+    expect(easyscholar?.configuredGroups).toEqual([['EASYSCHOLAR_KEY']]);
     expect(easyscholar?.tools).toContain('query_journal_metrics');
   });
 

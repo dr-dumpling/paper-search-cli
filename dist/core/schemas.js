@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getGenericSearchToolPlatform, isKnownSearchPlatform } from './platformMetadata.js';
+import { HARD_CORE_MAX_RESULTS_CAP, getCoreMaxResultsCap } from '../config/ResultCaps.js';
 const SortBySchema = z.enum(['relevance', 'date', 'citations']);
 const SortOrderSchema = z.enum(['asc', 'desc']);
 const SearchPlatformSchema = z
@@ -16,7 +17,7 @@ export const SearchPapersSchema = z
         .optional()
         .default('crossref'),
     sources: z.string().optional(),
-    maxResults: z.number().int().min(1).max(100).optional().default(10),
+    maxResults: z.number().int().min(1).max(HARD_CORE_MAX_RESULTS_CAP).optional().default(10),
     year: z.string().optional(),
     author: z.string().optional(),
     journal: z.string().optional(),
@@ -27,7 +28,23 @@ export const SearchPapersSchema = z
     sortBy: SortBySchema.optional().default('relevance'),
     sortOrder: SortOrderSchema.optional().default('desc')
 })
-    .strip();
+    .strip()
+    .superRefine((value, ctx) => {
+    if (!value.sources && value.platform === 'core') {
+        assertCoreMaxResults(value.maxResults, ctx);
+        return;
+    }
+    if (value.maxResults > 100) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.too_big,
+            maximum: 100,
+            type: 'number',
+            inclusive: true,
+            message: 'Number must be less than or equal to 100',
+            path: ['maxResults']
+        });
+    }
+});
 export const SearchArxivSchema = z
     .object({
     query: z.string().min(1),
@@ -221,6 +238,16 @@ export const SearchPMCStyleSchema = z
     year: z.string().optional()
 })
     .strip();
+export const SearchCoreSchema = z
+    .object({
+    query: z.string().min(1),
+    maxResults: z.number().int().min(1).optional().default(10),
+    year: z.string().optional()
+})
+    .strip()
+    .superRefine((value, ctx) => {
+    assertCoreMaxResults(value.maxResults, ctx);
+});
 export const GenericPlatformSearchSchema = z
     .object({
     query: z.string().min(1),
@@ -314,13 +341,27 @@ export function parseToolArgs(toolName, args) {
             return SearchUnpaywallSchema.parse(args);
         case 'search_pmc':
         case 'search_europepmc':
-        case 'search_core':
         case 'search_openaire':
             return SearchPMCStyleSchema.parse(args);
+        case 'search_core':
+            return SearchCoreSchema.parse(args);
         case 'download_with_fallback':
             return DownloadWithFallbackSchema.parse(args);
         default:
             return args;
+    }
+}
+function assertCoreMaxResults(maxResults, ctx) {
+    const cap = getCoreMaxResultsCap();
+    if (maxResults > cap) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.too_big,
+            maximum: cap,
+            type: 'number',
+            inclusive: true,
+            message: `CORE maxResults must be less than or equal to ${cap}. Configure CORE_MAX_RESULTS_CAP up to ${HARD_CORE_MAX_RESULTS_CAP} to raise this limit.`,
+            path: ['maxResults']
+        });
     }
 }
 //# sourceMappingURL=schemas.js.map

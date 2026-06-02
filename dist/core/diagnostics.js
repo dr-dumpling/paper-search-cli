@@ -12,7 +12,7 @@ export const API_REQUIREMENTS = [
             'Filters such as field, year, author, or venue are too narrow'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `SEMANTIC_SCHOLAR_API_KEY` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `SEMANTIC_SCHOLAR_API_KEY` is configured.',
             'Retry with fewer filters or broader method terms.',
             'Use `search_semantic_scholar`, PubMed, or Crossref to find candidate titles before snippet search.'
         ]
@@ -31,7 +31,7 @@ export const API_REQUIREMENTS = [
             'The query uses unsupported field tags, sort fields, or filters'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `WOS_API_KEY` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `WOS_API_KEY` is configured.',
             'Try `paper-search search "machine learning" --platform webofscience --max-results 1 --pretty` as a minimal test.',
             'Remove advanced filters first; then re-add year, author, journal, or sorting one at a time.',
             'Check the Clarivate developer dashboard for Web of Science Starter access.'
@@ -51,7 +51,7 @@ export const API_REQUIREMENTS = [
             'Institution or product entitlement is not enabled'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `ELSEVIER_API_KEY` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `ELSEVIER_API_KEY` is configured.',
             'Try `paper-search search "machine learning" --platform scopus --max-results 1 --pretty` as a minimal test.',
             'If 401/403 persists, check the Elsevier developer dashboard for Scopus Search API entitlement.',
             'Avoid COMPLETE view or premium fields unless the key is explicitly entitled for them.'
@@ -70,7 +70,7 @@ export const API_REQUIREMENTS = [
             'The key is restricted to another Elsevier product such as Scopus'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `ELSEVIER_API_KEY` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `ELSEVIER_API_KEY` is configured.',
             'If Scopus works but ScienceDirect returns 401, request ScienceDirect Search API access in the Elsevier developer dashboard.',
             'Use Crossref, OpenAlex, Semantic Scholar, PubMed, or Europe PMC as metadata fallbacks while entitlement is unavailable.'
         ]
@@ -88,7 +88,7 @@ export const API_REQUIREMENTS = [
             'The query uses an unsupported IEEE Xplore search parameter'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `IEEE_API_KEY` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `IEEE_API_KEY` is configured.',
             'Try `paper-search search "machine learning" --platform ieee --max-results 1 --pretty` as a minimal test.',
             'Check the IEEE Developer Portal for Metadata API entitlement.',
             'Remove optional filters first; then re-add year, author, journal, or sorting one at a time.'
@@ -108,7 +108,7 @@ export const API_REQUIREMENTS = [
             'Filters such as subject, year, or type are too restrictive'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `SPRINGER_API_KEY` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `SPRINGER_API_KEY` is configured.',
             'Try `paper-search search "machine learning" --platform springer --max-results 1 --pretty` as a minimal test.',
             'Generate or verify the key in the Springer Nature developer portal.',
             'Set `SPRINGER_OPENACCESS_API_KEY` only if you have a separate OpenAccess API key.'
@@ -127,7 +127,7 @@ export const API_REQUIREMENTS = [
             'The requested article is outside the token permissions'
         ],
         actions: [
-            'Run `paper-search config doctor --pretty` and confirm `WILEY_TDM_TOKEN` is configured.',
+            'Run `paper-search doctor --pretty` and confirm `WILEY_TDM_TOKEN` is configured.',
             'Verify the DOI belongs to Wiley before using `download_paper --platform wiley`.',
             'Check Wiley TDM token permissions if 401/403 persists.'
         ]
@@ -173,14 +173,14 @@ export const API_REQUIREMENTS = [
         capability: 'CORE search and OA full text discovery',
         tools: ['search_papers'],
         keyGroups: [],
-        optionalKeyGroups: [['PAPER_SEARCH_CORE_API_KEY', 'CORE_API_KEY']],
+        optionalKeyGroups: [['CORE_API_KEY']],
         commonFailures: [
             'Unauthenticated requests may be rate-limited',
             'A configured key may be invalid; the CLI can fall back to unauthenticated search',
             'Repository records may not expose a PDF URL'
         ],
         actions: [
-            'Configure `PAPER_SEARCH_CORE_API_KEY` or `CORE_API_KEY` for higher limits.',
+            'Configure `CORE_API_KEY` for higher limits.',
             'If results are empty, retry through Europe PMC, PMC, OpenAIRE, or OpenAlex.',
             'Use DOI/title fallbacks for PDF discovery.'
         ]
@@ -191,14 +191,14 @@ export const API_REQUIREMENTS = [
         capability: 'OpenAIRE discovery',
         tools: ['search_papers'],
         keyGroups: [],
-        optionalKeyGroups: [['PAPER_SEARCH_OPENAIRE_API_KEY', 'OPENAIRE_API_KEY']],
+        optionalKeyGroups: [['OPENAIRE_API_KEY']],
         commonFailures: [
             'OpenAIRE can return sparse metadata for broad or ambiguous terms',
             'Rate limits or temporary service blocks may affect unauthenticated requests',
             'Direct PDF download is not supported by this CLI'
         ],
         actions: [
-            'Configure `PAPER_SEARCH_OPENAIRE_API_KEY` or `OPENAIRE_API_KEY` if your OpenAIRE account requires it.',
+            'Configure `OPENAIRE_API_KEY` if your OpenAIRE account requires it.',
             'Use OpenAlex, Crossref, Europe PMC, or CORE as companion sources.',
             'Use returned DOI or URL with `download_with_fallback` for retrieval.'
         ]
@@ -224,7 +224,7 @@ export const API_REQUIREMENTS = [
         platform: 'easyscholar',
         capability: 'EasyScholar journal metrics: impact factor, JCR quartile, CAS zones, JCI, ESI, and rank datasets',
         tools: ['query_journal_metrics'],
-        keyGroups: [['EASYSCHOLAR_KEY', 'PAPER_SEARCH_EASYSCHOLAR_KEY']],
+        keyGroups: [['EASYSCHOLAR_KEY']],
         commonFailures: [
             'EasyScholar SecretKey is missing or invalid',
             'The journal name is ambiguous or not indexed by EasyScholar',
@@ -303,7 +303,7 @@ export function diagnoseError(error, context = {}) {
                 'The CLI process was started before the user config was loaded.'
             ],
             actions: [
-                'Run `paper-search config doctor --pretty`.',
+                'Run `paper-search doctor --pretty`.',
                 ...missingKeyActions(requirement),
                 'After setting credentials, rerun the same minimal command.'
             ],
@@ -343,7 +343,7 @@ export function diagnoseError(error, context = {}) {
                 'The credential is configured under the wrong variable name.'
             ],
             actions: [
-                'Run `paper-search config doctor --pretty` and verify the relevant key is configured.',
+                'Run `paper-search doctor --pretty` and verify the relevant key is configured.',
                 ...platformActions(platform),
                 'Regenerate the key in the provider developer portal if the minimal command still returns 401.'
             ],
@@ -404,7 +404,7 @@ export function diagnoseError(error, context = {}) {
             ],
             actions: [
                 'Wait and retry with a smaller `--max-results`.',
-                'Run `paper-search config doctor --pretty` to check optional rate-limit keys.',
+                'Run `paper-search doctor --pretty` to check optional rate-limit keys.',
                 ...platformActions(platform)
             ],
             relatedConfigKeys
@@ -506,7 +506,7 @@ function zeroResultDiagnostic(context) {
         actions: [
             'Retry a minimal broad query with `--max-results 1`.',
             'Remove optional filters such as year, author, journal, subject, document type, and openAccess.',
-            'Run `paper-search config doctor --pretty`.',
+            'Run `paper-search doctor --pretty`.',
             ...missingKeyActions(requirement),
             ...platformActions(platform),
             'Cross-check the same query with Crossref, OpenAlex, Semantic Scholar, PubMed, Europe PMC, or Google Scholar.'

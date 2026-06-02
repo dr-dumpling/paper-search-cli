@@ -67,12 +67,13 @@ describe('ConfigService', () => {
       [
         'SEMANTIC_SCHOLAR_API_KEY=semantic-test-key',
         'PAPER_SEARCH_UNPAYWALL_EMAIL=user@example.com',
+        'CORE_MAX_RESULTS_CAP=300',
         'UNSUPPORTED_KEY=ignored'
       ].join('\n')
     );
 
     const result = importEnvFile(envPath);
-    expect(result.imported).toEqual(['SEMANTIC_SCHOLAR_API_KEY', 'PAPER_SEARCH_UNPAYWALL_EMAIL']);
+    expect(result.imported).toEqual(['SEMANTIC_SCHOLAR_API_KEY', 'PAPER_SEARCH_UNPAYWALL_EMAIL', 'CORE_MAX_RESULTS_CAP']);
 
     const entries = listConfigEntries();
     expect(entries).toEqual(
@@ -86,6 +87,11 @@ describe('ConfigService', () => {
           key: 'PAPER_SEARCH_UNPAYWALL_EMAIL',
           configured: true,
           value: 'us***@example.com'
+        }),
+        expect.objectContaining({
+          key: 'CORE_MAX_RESULTS_CAP',
+          configured: true,
+          value: '***'
         })
       ])
     );

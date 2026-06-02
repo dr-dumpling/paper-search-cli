@@ -4,6 +4,7 @@ import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } fro
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
 import { PDFExtractor } from '../utils/PDFExtractor.js';
+import { getCoreMaxResultsCap } from '../config/ResultCaps.js';
 
 interface CoreWork {
   id?: string | number;
@@ -29,7 +30,7 @@ export class CORESearcher extends PaperSource {
   private readonly client: AxiosInstance;
 
   constructor(apiKey?: string) {
-    const configuredKey = apiKey || process.env.PAPER_SEARCH_CORE_API_KEY || process.env.CORE_API_KEY || '';
+    const configuredKey = apiKey || process.env.CORE_API_KEY || '';
     super('core', 'https://api.core.ac.uk/v3', configuredKey);
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -56,14 +57,42 @@ export class CORESearcher extends PaperSource {
 
   async search(query: string, options: SearchOptions = {}): Promise<Paper[]> {
     try {
-      const response = await this.requestWithRetry('/search/works', {
-        q: query,
-        limit: Math.min(options.maxResults || 10, 100),
-        offset: 0,
-        ...(options.year ? { year: options.year } : {})
-      });
-      const results = Array.isArray(response?.results) ? response.results : [];
-      return results.map((item: CoreWork) => this.parseWork(item)).filter(Boolean) as Paper[];
+      const maxResults = Math.min(Math.max(1, options.maxResults || 10), getCoreMaxResultsCap());
+      const pageSize = Math.min(maxResults, 100);
+      const papers: Paper[] = [];
+      const seen = new Set<string>();
+      const maxPages = Math.min(20, maxResults);
+
+      for (let page = 0, offset = 0; papers.length < maxResults && page < maxPages; page += 1) {
+        const requestedLimit = Math.min(pageSize, maxResults - papers.length);
+        const response = await this.requestWithRetry('/search/works', {
+          q: query,
+          limit: requestedLimit,
+          offset,
+          ...(options.year ? { year: options.year } : {})
+        });
+        const results = Array.isArray(response?.results) ? response.results : [];
+        if (results.length === 0) break;
+
+        let added = 0;
+        for (const item of results) {
+          const paper = this.parseWork(item);
+          if (!paper || seen.has(paper.paperId)) continue;
+          seen.add(paper.paperId);
+          papers.push(paper);
+          added += 1;
+          if (papers.length >= maxResults) break;
+        }
+
+        if (added === 0) break;
+
+        offset += requestedLimit;
+        const totalHits = Number(response?.totalHits || response?.count || 0);
+        if (totalHits > 0 && offset >= totalHits) break;
+        if (!totalHits && results.length < requestedLimit) break;
+      }
+
+      return papers;
     } catch (error) {
       this.handleHttpError(error, 'search');
     }

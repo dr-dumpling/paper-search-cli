@@ -56,7 +56,7 @@ export interface JournalMetricsRow {
 }
 
 function easyScholarKey(): string {
-  const key = process.env.EASYSCHOLAR_KEY || process.env.PAPER_SEARCH_EASYSCHOLAR_KEY || '';
+  const key = process.env.EASYSCHOLAR_KEY || '';
   if (!key.trim()) {
     throw new Error('EasyScholar API key not configured. Set EASYSCHOLAR_KEY with `paper-search setup EASYSCHOLAR_KEY`.');
   }

@@ -12,7 +12,6 @@ describe('JournalMetricsService', () => {
 
   it('requires an EasyScholar key', async () => {
     delete process.env.EASYSCHOLAR_KEY;
-    delete process.env.PAPER_SEARCH_EASYSCHOLAR_KEY;
 
     await expect(queryJournalMetrics({ journals: ['Nature'] })).rejects.toThrow('EasyScholar API key not configured');
   });
@@ -111,7 +110,7 @@ describe('JournalMetricsService', () => {
   });
 
   it('reports not_found when EasyScholar returns no official rank fields', async () => {
-    process.env.PAPER_SEARCH_EASYSCHOLAR_KEY = 'test-fallback-key';
+    process.env.EASYSCHOLAR_KEY = 'test-easyscholar-key';
     jest.spyOn(axios, 'get').mockResolvedValue({
       data: {
         code: 200,

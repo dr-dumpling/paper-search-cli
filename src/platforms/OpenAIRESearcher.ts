@@ -8,7 +8,7 @@ export class OpenAIRESearcher extends PaperSource {
   private readonly client: AxiosInstance;
 
   constructor(apiKey?: string) {
-    const configuredKey = apiKey || process.env.PAPER_SEARCH_OPENAIRE_API_KEY || process.env.OPENAIRE_API_KEY || '';
+    const configuredKey = apiKey || process.env.OPENAIRE_API_KEY || '';
     super('openaire', 'https://api.openaire.eu', configuredKey);
     this.client = axios.create({
       baseURL: this.baseUrl,

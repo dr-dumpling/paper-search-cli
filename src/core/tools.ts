@@ -617,7 +617,12 @@ const BASE_TOOLS: CliTool[] = [
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Search query string' },
-        maxResults: { type: 'number', minimum: 1, maximum: 100, description: 'Maximum number of results to return' },
+        maxResults: {
+          type: 'number',
+          minimum: 1,
+          maximum: 500,
+          description: 'Maximum number of results to return. Default cap is 100; set CORE_MAX_RESULTS_CAP up to 500 to raise it.'
+        },
         year: { type: 'string', description: 'Publication year filter' }
       },
       required: ['query']

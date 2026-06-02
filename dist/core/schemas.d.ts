@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export declare const SearchPapersSchema: z.ZodObject<{
+export declare const SearchPapersSchema: z.ZodEffects<z.ZodObject<{
     query: z.ZodString;
     platform: z.ZodDefault<z.ZodOptional<z.ZodUnion<[z.ZodEffects<z.ZodString, string, string>, z.ZodLiteral<"all">]>>>;
     sources: z.ZodOptional<z.ZodString>;
@@ -14,6 +14,34 @@ export declare const SearchPapersSchema: z.ZodObject<{
     sortBy: z.ZodDefault<z.ZodOptional<z.ZodEnum<["relevance", "date", "citations"]>>>;
     sortOrder: z.ZodDefault<z.ZodOptional<z.ZodEnum<["asc", "desc"]>>>;
 }, "strip", z.ZodTypeAny, {
+    maxResults: number;
+    sortBy: "relevance" | "date" | "citations";
+    sortOrder: "asc" | "desc";
+    query: string;
+    platform: string;
+    journal?: string | undefined;
+    year?: string | undefined;
+    author?: string | undefined;
+    category?: string | undefined;
+    days?: number | undefined;
+    fetchDetails?: boolean | undefined;
+    fieldsOfStudy?: string[] | undefined;
+    sources?: string | undefined;
+}, {
+    query: string;
+    journal?: string | undefined;
+    year?: string | undefined;
+    maxResults?: number | undefined;
+    author?: string | undefined;
+    category?: string | undefined;
+    sortBy?: "relevance" | "date" | "citations" | undefined;
+    sortOrder?: "asc" | "desc" | undefined;
+    days?: number | undefined;
+    fetchDetails?: boolean | undefined;
+    fieldsOfStudy?: string[] | undefined;
+    platform?: string | undefined;
+    sources?: string | undefined;
+}>, {
     maxResults: number;
     sortBy: "relevance" | "date" | "citations";
     sortOrder: "asc" | "desc";
@@ -412,6 +440,27 @@ export declare const SearchPMCStyleSchema: z.ZodObject<{
     maxResults: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
     year: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
+    maxResults: number;
+    query: string;
+    year?: string | undefined;
+}, {
+    query: string;
+    year?: string | undefined;
+    maxResults?: number | undefined;
+}>;
+export declare const SearchCoreSchema: z.ZodEffects<z.ZodObject<{
+    query: z.ZodString;
+    maxResults: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+    year: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    maxResults: number;
+    query: string;
+    year?: string | undefined;
+}, {
+    query: string;
+    year?: string | undefined;
+    maxResults?: number | undefined;
+}>, {
     maxResults: number;
     query: string;
     year?: string | undefined;

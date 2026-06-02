@@ -6,7 +6,7 @@ import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 export class OpenAIRESearcher extends PaperSource {
     client;
     constructor(apiKey) {
-        const configuredKey = apiKey || process.env.PAPER_SEARCH_OPENAIRE_API_KEY || process.env.OPENAIRE_API_KEY || '';
+        const configuredKey = apiKey || process.env.OPENAIRE_API_KEY || '';
         super('openaire', 'https://api.openaire.eu', configuredKey);
         this.client = axios.create({
             baseURL: this.baseUrl,

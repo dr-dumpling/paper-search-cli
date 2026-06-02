@@ -96,7 +96,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     displayName: 'CORE',
     sourceKind: 'official-api',
     defaultInAll: true,
-    optionalConfigKeys: [['PAPER_SEARCH_CORE_API_KEY', 'CORE_API_KEY']],
+    optionalConfigKeys: [['CORE_API_KEY']],
     supportedOptions: ['maxResults', 'year']
   },
   {
@@ -104,7 +104,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     displayName: 'OpenAIRE',
     sourceKind: 'official-api',
     defaultInAll: true,
-    optionalConfigKeys: [['PAPER_SEARCH_OPENAIRE_API_KEY', 'OPENAIRE_API_KEY']],
+    optionalConfigKeys: [['OPENAIRE_API_KEY']],
     supportedOptions: ['maxResults', 'year']
   },
   {
