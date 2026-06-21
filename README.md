@@ -8,7 +8,7 @@ Paper Search CLI is an agent-facing Skill + CLI package built on a standalone No
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-25-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 [Quick Start](#quick-start) | [Architecture](#architecture) | [Configuration](#configuration) | [Agent Skill](#agent-skill) | [Supported Platforms](#supported-platforms) | [Commands](#commands) | [Troubleshooting](#troubleshooting)
