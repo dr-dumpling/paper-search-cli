@@ -1,251 +1,319 @@
-# paper-search-cli 项目架构总结
+# paper-search-cli 项目架构总结（v0.3.1）
 
-> 本文用中文说明 `paper-search-cli` 当前是如何构建的：它是什么、分成哪几层、一条命令从输入到输出经过哪些环节。基于 `src/` 源码（v0.3.0）整理，便于快速看懂全局。
-
----
-
-## 1. 这是个什么项目
-
-一个**面向 AI Agent 的学术文献检索与下载命令行工具（CLI）**。
-
-- 语言/运行时：TypeScript + Node.js（`>=18`），ESM 模块，编译产物在 `dist/`。
-- 入口可执行文件：`paper-search`（`package.json` 的 `bin` 指向 `dist/cli.js`）。
-- 核心能力：在 **20+ 个学术数据源**（Crossref、PubMed、arXiv、OpenAlex、Semantic Scholar、Web of Science、Springer……）里统一检索论文、查期刊指标、按多级回退策略下载 PDF。
-- 设计取向：输出**默认是 JSON**，方便 Agent 解析；同时附带一个可被 Agent 运行时安装的 **Skill**（路由说明），让 Agent 知道何时、如何调用这个 CLI。
-
-一句话概括它的分层思路：**“文献检索领域” 与 “友好管理层（健康检查/配置/Skill 安装）” 分离**——前者负责真正搜论文，后者负责让工具可被正确配置和发现。
+> 本文描述 `paper-search-cli` 在 citation expansion 与 `DownloadTier` 接口重排完成后的**当前架构**。  
+> 目标态总览见 [`ARCHITECTURE_REFACTOR.zh.md`](./ARCHITECTURE_REFACTOR.zh.md)。  
+> 下一步修复任务书见 [`refactor/05-agent-repair-plan.md`](./refactor/05-agent-repair-plan.md)。
 
 ---
 
-## 2. 顶层目录速览
+## 1. 项目定位
 
-```
+`paper-search-cli` 是一个面向 AI Agent、终端用户和脚本的学术文献工作 CLI。
+
+- 语言 / 运行时：TypeScript + Node.js `>=18`，ESM 模块。
+- 入口可执行文件：`paper-search`，由 `package.json` 的 `bin` 指向 `dist/cli.js`。
+- 默认输出：JSON，便于 Agent 解析；需要可读报告时显式使用 `--format text` 或 `--pretty`。
+- 随包发布：`skills/paper-search/`，作为 Routing Skill，告诉 Agent 何时调用 CLI、如何处理证据、配置和下载边界。
+
+当前 CLI 已经围绕五个文献主能力工作：
+
+| 能力 | 稳定能力名 | 主要入口 | 说明 |
+|---|---|---|---|
+| 文献元数据检索 | `metadata_search` | `paper-search search` / `paper-search run search_*` | 多平台论文元数据检索、DOI/PMID/PMCID/arXiv ID 核验、文献初筛 |
+| 引文扩展 | `citation_expansion` | `paper-search run get_paper_citations` / `paper-search run get_paper_references` | 基于 Semantic Scholar Graph API 查询已知论文的施引文献和参考文献 |
+| 期刊指标 | `journal_metrics` | `paper-search journal-metrics` / `paper-search run query_journal_metrics` | EasyScholar 期刊影响因子、JCR/SSCI、中科院分区、JCI、ESI、预警和等级字段 |
+| PDF 发现 / 下载 | `pdf_discovery` | `paper-search download` / `paper-search run download_with_fallback` | 源生下载、元数据 PDF URL、仓储、Unpaywall、Sci-Hub fallback |
+| 正文片段检索 | `body_snippet_search` | `paper-search run search_semantic_snippets` | Semantic Scholar Open Access snippet 索引，用于查 Methods、参数、软件、模型和写法线索 |
+
+`doctor`、`smoke`、`config`、`skills`、`tools` 属于 Friendly Management Layer，不是文献任务本身。
+
+---
+
+## 2. 当前重构完成状态
+
+本轮小重构的核心目标已经落地：
+
+| 任务 | 当前状态 | 架构影响 |
+|---|---|---|
+| `01-citation-tools.md` | 已完成 | `CitationService` 已暴露为两个 agent-facing 工具：`get_paper_citations` 与 `get_paper_references` |
+| `02-download-tier-interface.md` | 已完成 | `download_with_fallback` 已改为 `DownloadTier` 顺序执行：`primary -> direct_pdf_url -> repositories -> unpaywall -> scihub` |
+| `03-skill-cli-contract-update.md` | 已完成 | README、Skill、`cli-contract.md` 已同步 citation expansion 工具与能力地图 |
+| `04-citation-tests-and-acceptance.md` | 已完成 | 已补 schema、handler、Skill contract、OpenAccessFallbackService 的相关测试 |
+
+需要注意：如果 `docs/refactor/README.md` 仍把 01–04 标为“可执行”，应在下一次文档修复中改为“已完成”，避免 Agent 重复执行已完成任务。
+
+---
+
+## 3. 顶层目录职责
+
+```text
 paper-search-cli/
-├── src/                  # 全部 TypeScript 源码（下文重点）
-│   ├── cli.ts            # CLI 入口：解析参数、分发命令、渲染输出
-│   ├── core/             # 核心编排层（工具定义、调用分发、诊断、能力画像）
-│   ├── platforms/        # 各学术平台的 Searcher（每个数据源一个类）
-│   ├── services/         # 跨平台业务服务（多源搜索、下载回退、引用、期刊指标）
-│   ├── config/           # 配置与密钥管理、结果上限
-│   ├── utils/            # 基础设施（HTTP、限流、缓存、错误、安全、PDF）
-│   ├── skills/           # Skill 安装器（把 Bundled Skill 写入 Agent 目录）
-│   └── models/Paper.ts   # 统一的论文数据模型
-├── skills/paper-search/  # 随包发布的 Skill（SKILL.md + references/）
-├── docs/adr/             # 架构决策记录（ADR）
-├── tests/                # Jest 测试，目录结构镜像 src/
-├── dist/                 # tsc 编译产物（发布用）
+├── src/
+│   ├── cli.ts                  # CLI 入口：参数解析、命令分发、输出包装
+│   ├── core/                   # 工具定义、schema、工具路由、能力画像、诊断、smoke
+│   ├── platforms/              # 各数据源 Searcher，继承 PaperSource
+│   ├── services/               # 跨平台能力服务：多源检索、PDF fallback、引用、期刊指标
+│   ├── config/                 # 配置和密钥管理、结果上限
+│   ├── utils/                  # HTTP/proxy、限流、缓存、错误、安全、PDF 下载与解析
+│   ├── skills/                 # Bundled Skill 安装 / diff / update 逻辑
+│   └── models/Paper.ts         # 统一论文数据模型
+├── skills/paper-search/        # 随包发布的 Routing Skill 与 references
+├── docs/                       # 架构、ADR、重构任务书
+├── tests/                      # Jest 测试，目录结构大体镜像 src/
+├── dist/                       # tsc 编译产物，发布用
 └── package.json / tsconfig.json / .env.example
 ```
 
----
-
-## 3. 分层架构
-
-整个项目可以看成**自上而下 6 层**，依赖方向单向向下：
-
-```
-①  CLI 入口层          src/cli.ts
-        │  解析命令 → 调用 core / services
-        ▼
-②  核心编排层          src/core/   (tools, handleToolCall, schemas,
-        │                          capabilityProfile, diagnostics ...)
-        ▼
-③  业务服务层          src/services/ (MultiSource, OpenAccessFallback,
-        │                            Citation, JournalMetrics)
-        ▼
-④  平台适配层          src/platforms/ (每个数据源一个 Searcher，
-        │                            统一继承 PaperSource 抽象基类)
-        ▼
-⑤  基础设施层          src/utils/  (HttpClient, RateLimiter, RequestCache,
-        │                          ErrorHandler, SecurityUtils, PdfDownload)
-        ▼
-⑥  配置与模型          src/config/ + src/models/Paper.ts
-```
-
-旁挂两条支线，不参与文献检索主流程：
-
-- **友好管理层（管理支线）**：`config` / `doctor` / `status` / `smoke` / `skills` / `setup` 等命令，负责配置、健康检查与 Skill 安装。
-- **Skill 分发**：`src/skills/SkillInstaller.ts` + `skills/paper-search/`，把使用说明分发给 Agent 运行时。
-
-### 各层职责
-
-| 层 | 关键文件 | 职责 |
-|----|----------|------|
-| ① CLI 入口 | `cli.ts` (984 行) | 手写参数解析（无三方 CLI 框架），按 `command` 字符串分发到各处理函数，统一渲染 JSON / text 输出 |
-| ② 核心编排 | `core/tools.ts`、`core/handleToolCall.ts`、`core/schemas.ts` | 定义 Agent 可调用的工具清单、用 Zod 校验入参、把工具调用路由到对应平台或服务 |
-| ② 核心编排 | `core/capabilityProfile.ts`、`core/diagnostics.ts`、`core/platformMetadata.ts`、`core/liveSmoke.ts` | 能力画像、错误诊断、平台元数据注册表、联网自检 |
-| ③ 业务服务 | `services/MultiSourceSearchService.ts` | 多源并发搜索 + 去重 + 结果聚合 |
-| ③ 业务服务 | `services/OpenAccessFallbackService.ts` | PDF 多级回退下载漏斗 |
-| ③ 业务服务 | `services/JournalMetricsService.ts`、`CitationService.ts` | 期刊影响因子/分区查询、引用格式化 |
-| ④ 平台适配 | `platforms/PaperSource.ts` + 24 个 Searcher | 抽象基类 + 各数据源的具体实现 |
-| ⑤ 基础设施 | `utils/*` | 全局代理设置、限流、缓存、错误处理、脱敏、PDF 下载/解析；当前尚未形成统一 HTTP 客户端 |
-| ⑥ 配置模型 | `config/ConfigService.ts`、`models/Paper.ts` | 密钥/环境变量管理、统一论文数据结构 |
+物理目录还没有完全切成 `capabilities/`、`registry/`、`infrastructure/`。当前架构仍然是“6 层代码骨架 + 三轴目标模型”的过渡形态。
 
 ---
 
-## 4. 核心抽象：`PaperSource` 与平台注册表
+## 4. 当前架构心智模型
 
-这是整个项目最重要的设计，理解它就理解了一半。
+当前代码仍可按 6 层理解，但后续演进应按三条轴收敛。
 
-### 4.1 `PaperSource` 抽象基类（`platforms/PaperSource.ts`）
+### 4.1 当前 6 层代码骨架
 
-所有数据源都继承自这个抽象类，强制实现三个核心方法：
+```text
+① CLI 入口层        src/cli.ts
+       │
+       ▼
+② 核心编排层        src/core/  (tools, schemas, handleToolCall, diagnostics, capabilityProfile)
+       │
+       ▼
+③ 能力服务层        src/services/  (MultiSource, Citation, OpenAccessFallback, JournalMetrics)
+       │
+       ▼
+④ 平台适配层        src/platforms/  (PaperSource + 各平台 Searcher)
+       │
+       ▼
+⑤ 基础设施层        src/utils/  (HttpClient, RateLimiter, RequestCache, ErrorHandler, SecurityUtils, PdfDownload)
+       │
+       ▼
+⑥ 配置与模型        src/config/ + src/models/Paper.ts
+```
 
-- `search(query, options)` → 返回 `Paper[]`
-- `downloadPdf(paperId, options)` → 返回下载路径
-- `readPaper(paperId, options)` → 返回全文文本
-- `getCapabilities()` → 声明该平台支持搜索/下载/全文/被引/是否需密钥
+这套分层仍然有效，但不能再只按“自上而下 6 层”做架构判断。下一阶段应以三条正交轴为主。
 
-基类还提供公共能力：错误处理委托、重试判断、日期解析、文本清洗、文件名提取等。**新增一个数据源的算法适配主要是写一个继承 `PaperSource` 的新类**；但在当前架构下，还需要同步更新工具清单、schema、能力画像、实例化和 PDF fallback 源等多处手写登记（见 §4.2）。
+### 4.2 三条正交轴
 
-目前已有 24 个 Searcher，按来源性质分四类（见 `platformMetadata.ts` 的 `sourceKind`）：
+```text
+       ③ 基础设施轴
+       HttpClient · 限流 · 缓存 · 重试 · 超时 · 错误 · UA · 代理
+              ▲
+              │
+① 能力域轴 ───┼────────────────────→ ② 数据源轴
+metadata       │                       platformMetadata / factories / aliases
+citation       │                       Crossref / PubMed / arXiv / OpenAlex / ...
+journal        │
+pdf            │
+body snippets  │
+management     │
+```
 
-- `official-api`：官方 API（Crossref、OpenAlex、PubMed、arXiv、Semantic Scholar……）
-- `metadata-proxy`：元数据代理（Unpaywall、DBLP……）
-- `html`：网页抓取（Google Scholar、Sci-Hub……，用 `cheerio` 解析）
-- `alias`：同一实现的别名（如 `wos` = `webofscience`，`scholar` = `googlescholar`）
+判断规则：
 
-### 4.2 平台注册表（`core/platformMetadata.ts`）
-
-一张 `PLATFORM_METADATA` 表集中描述每个平台：`id`、别名、显示名、来源类型、是否进入 `--sources all`、所需/可选配置 key、支持的搜索选项。
-
-它已经是平台注册表的雏形：别名解析、`all` 默认源列表和部分工具/配置逻辑会读这张表。但它还不是完整的单一事实来源；工具清单、schema、能力画像、实例化和 PDF fallback 源仍有多处手写枚举。
-
-### 4.3 Searcher 实例化（`core/searchers.ts`）
-
-`initializeSearchers()` 一次性 `new` 出所有 Searcher（单例缓存），从 `process.env` 注入各平台密钥，返回一个 `Searchers` 字典对象。后续所有搜索/下载都从这个字典按 `id` 取实例。
-
-### 4.4 统一数据模型 `Paper`（`models/Paper.ts`）
-
-无论来自哪个源，结果都归一化成同一个 `Paper` 结构（`paperId`/`title`/`authors`/`doi`/`pdfUrl`/`source`……）。`PaperFactory.toDict()` 负责序列化成 Agent 友好的 JSON。
+- 是“用户可感知的功能”就归入能力域轴。
+- 是“论文数据、PDF 候选或平台来源”就归入数据源轴。
+- 是“所有常规 HTTP 请求都要共享的横切能力”就归入基础设施轴。
 
 ---
 
-## 5. 三条主要数据流
+## 5. 能力域边界
 
-### 5.1 多源搜索（`search --sources all`）
+| 能力域 | 当前实现位置 | 依赖 | 边界规则 |
+|---|---|---|---|
+| metadata search | `services/MultiSourceSearchService.ts` + `platforms/*` | `Searchers`、`PaperSource`、`platformMetadata` | 负责构建和核验论文元数据列表，不直接承担 PDF 下载策略 |
+| citation expansion | `services/CitationService.ts` + `core/handleToolCall.ts` | Semantic Scholar Graph API | 不进入 `platformMetadata`，不是关键词检索，不属于普通 metadata source |
+| pdf discovery | `services/OpenAccessFallbackService.ts` | `Searchers`、`DownloadTier`、`PdfDownload` | 只消费已知 `source / paperId / doi / title`，按 attempts 记录 fallback 过程 |
+| journal metrics | `services/JournalMetricsService.ts` | EasyScholar | 独立于论文平台检索，不进入论文数据源注册表 |
+| body snippet search | `SemanticScholarSearcher.searchSnippets()` + 私有 schema | Semantic Scholar OA snippet index | 使用 `limit`，不是 `maxResults`；返回 snippet 线索，不代表完整全文解析 |
+| management layer | `core/diagnostics.ts`、`core/capabilityProfile.ts`、`core/liveSmoke.ts`、`src/skills/*`、`config/*` | 读取其它模块状态 | 只能读状态、给诊断和同步 Skill；功能模块不反向依赖管理层 |
 
-```
-cli.ts (command=search)
-  → searchMultipleSources()              [services/MultiSourceSearchService.ts]
-      → parseSourceList()                解析 / 别名归一 / 过滤出有效源
-      → Promise.allSettled(各源并发 search)，每个源带超时 withTimeout()
-      → 失败的源记入 errors/failed_sources，不影响其它源（容错）
-      → dedupePapers()                   按 DOI → 标题+作者 → 源内 id 去重
-  → 返回 { sources_used, source_results, errors, total, papers[] }
-```
+关键约束：
 
-要点：**并发 + 单源超时隔离 + 部分失败不致命 + 跨源去重**。这是“先建列表、再下载”两段式工作流的第一段。
-
-### 5.2 单工具调用（`run <tool> --arg ...`）
-
-```
-cli.ts (command=run)
-  → handleToolCall(toolName, args, searchers)   [core/handleToolCall.ts]
-      → parseToolArgs()  用 Zod schema 校验并归一入参   [core/schemas.ts]
-      → 按 toolName 路由：
-          · 通用搜索工具  → 对应平台 searcher.search()
-          · DOI/PMID 定位 → 在 DOI_LOOKUP_SOURCES 里查
-          · 下载           → downloadWithFallback()
-          · 期刊指标       → queryJournalMetrics()
-  → 统一包成 { content:[{type:'text', text}] } 返回
-```
-
-`core/tools.ts` 定义了暴露给 Agent 的全部工具清单（`paper-search tools` 可列出），schema 与平台注册表保持一致。
-
-### 5.3 PDF 下载回退漏斗（`OpenAccessFallbackService.ts`）
-
-下载不是“一次成功或失败”，而是一个**逐级回退漏斗**，每一步都记录 `attempts`：
-
-```
-1. primary          源自身的下载器（若支持 download）
-2. direct_pdf_url   源元数据里带的 pdf_url
-3. repositories     PMC / EuropePMC / CORE / OpenAIRE 仓库兜底
-4. unpaywall        按 DOI 解析开放获取 PDF
-5. scihub           最终兜底（可用 useSciHub=false 关闭）
-```
-
-对应 CONTEXT.md 里的概念：开放获取源（Open Access）、权属访问源（Entitled Access）、Sci-Hub 兜底三类分开管理。
+1. `metadata_search` 与 `pdf_discovery` 通过 `Paper`、DOI、title、source 解耦。
+2. `citation_expansion` 是独立能力，不塞进 `metadata_search` 平台列表。
+3. `journal_metrics` 只处理期刊，不处理论文元数据。
+4. `body_snippet_search` 保持 Semantic Scholar 私有 schema，不被普通平台 schema 泛化。
+5. management layer 是友好管理支线，不参与文献任务主流程。
 
 ---
 
-## 6. 友好管理层（管理支线）
+## 6. 主要数据流
 
-这条支线**不搜论文**，专门让工具“可被正确使用”，是本项目区别于普通爬虫脚本的地方（见 ADR-0003）：
+### 6.1 CLI 启动
 
-- **`config`**：`init/set/get/unset/list/doctor/path/import-env/keys` —— 管理密钥与环境变量（`config/ConfigService.ts`），输出时密钥脱敏。
-- **`doctor` / `status`**：健康报告，合并“脱敏配置 + 能力画像 + 平台状态”。
-- **`capabilityProfile`**：把底层“哪些密钥配了”翻译成**面向用户的能力**（`metadata_search` / `citation_expansion` / `body_snippet_search` / `journal_metrics` / `pdf_discovery` / `entitled_access`），每项给 `available/degraded/unavailable` 状态和原因。即使某个能力缺失，其它能力仍可用（能力降级而非整体失效）。
-- **`smoke --mock|--live`**：离线自检（验证命令接线）或联网自检（`core/liveSmoke.ts`，跑一个免费源小查询 + Sci-Hub 可用性轻探测）。
-- **`skills`** + **`setup`**：把随包的 Skill 安装到 Agent 运行时目录（见下节）。
-
----
-
-## 7. Skill 分发机制
-
-项目不仅是 CLI，还**随包携带一份 Skill**（`skills/paper-search/`，含 `SKILL.md` 和 `references/` 路由文档），用来告诉 Agent 何时调用本 CLL、如何遵守证据与密钥边界。
-
-- `src/skills/SkillInstaller.ts` 负责：把 Bundled Skill **显式安装**到用户指定的 Agent Skill 目录（不做 postinstall 静默安装，见 ADR-0001），并能做 `status`（已装状态）、`diff`（与随包版本的差异，只比对受管文件）、`update`（同步）。
-- 关键概念：Bundled Skill（随包）→ Installed Skill（已写入 Agent 目录）→ Managed Skill File（受包管理的文件）/ Extra Skill File（用户额外文件，更新时不删）。
-
-这样 CLI 可执行文件与 Agent 使用说明**版本同步**，避免文档与实现脱节。
-
----
-
-## 8. 基础设施层（`utils/`）
-
-这里放的是平台会用到的横切工具，但当前还没有真正统一所有 HTTP 请求。多数平台仍各自直接使用 `axios`；`HttpClient.ts` 目前主要负责全局代理设置，统一请求包装层是目标架构里的改造方向。
-
-| 文件 | 作用 |
-|------|------|
-| `HttpClient.ts` | 当前主要做全局代理设置（http/socks）；尚不是统一请求客户端 |
-| `RateLimiter.ts` | 各平台限流，避免触发数据源风控 |
-| `RequestCache.ts` | LRU 请求缓存，减少重复网络请求 |
-| `QuotaManager.ts` | 配额管理 |
-| `ErrorHandler.ts` | 统一错误分类、可重试判断、重试延迟 |
-| `SecurityUtils.ts` | 请求脱敏（`maskSensitiveData`）、`withTimeout` 超时包装、输入清洗 |
-| `PdfDownload.ts` / `PDFExtractor.ts` | PDF 下载与文本提取（`pdf-parse`） |
-| `Logger.ts` | 调试日志 |
-
----
-
-## 9. 配置与启动顺序
-
-CLI 启动时（`cli.ts` 顶部）按固定顺序加载配置，优先级由低到高：
-
-```
-1. dotenv.config()            读取 .env 文件
-2. loadUserConfigIntoEnv()    读取用户配置文件并注入 process.env
-3. setupGlobalProxy()         按环境变量配置全局代理
+```text
+cli.ts
+  → dotenv.config()
+  → loadUserConfigIntoEnv()
+  → setupGlobalProxy()
+  → parseCli(argv)
+  → run(parsed)
 ```
 
-密钥**只通过环境变量 / 用户配置文件 / .env 提供，绝不写入源码或 Skill**。`.env.example` 列出全部可配置项。所有平台密钥在 `initializeSearchers()` 时从 `process.env` 读取。
+密钥只来自环境变量、`.env` 或用户配置文件。Skill、README、测试和日志不得写入真实密钥。
 
----
+### 6.2 `paper-search run <tool>`
 
-## 10. 构建、测试与发布
-
-- **构建**：`npm run build` = 清理 `dist/` → `tsc` 编译 → 给 `dist/cli.js` 加可执行权限。
-- **开发**：`npm run dev`（`tsx` 直跑 `src/cli.ts`，免编译）。
-- **测试**：`npm test`（Jest + ts-jest，ESM 预设）。`tests/` 目录结构镜像 `src/`，覆盖各 Searcher、services、core、utils、skills 契约测试。
-- **发布**：`prepublishOnly` 先跑测试再构建；`files` 字段只发布 `dist/`、两份 README、`skills/`、`LICENSE`、`.env.example`。
-
----
-
-## 11. 设计决策（ADR 摘要）
-
-`docs/adr/` 记录了三条关键决策：
-
-- **ADR-0001 显式 Skill 安装**：不在 npm postinstall 里静默装 Skill，改为用户在 `setup`/`skills` 命令中显式确认安装目标，避免污染用户 Agent 目录。
-- **ADR-0002 独立能力画像**：能力画像（Capability Profile）独立于具体平台名/密钥名，向用户描述“能做什么”而非“配了哪个 key”。
-- **ADR-0003 友好管理层**：把配置/健康/Skill 管理等命令与文献检索领域**显式分层**，互不污染。
-
----
-
-## 12. 一句话总结架构特征
-
-1. **抽象基类 + 注册表雏形**：`PaperSource` 统一接口 + `platformMetadata` 承载部分平台事实源；目标是继续收敛散落枚举，降低新增数据源成本。
-2. **领域与管理分离**：搜论文的逻辑和“让工具可用”的逻辑（配置/健康/Skill）清晰分层。
-3. **容错优先**：多源并发带超时隔离、部分失败不致命、下载多级回退、能力降级而非整体失效。
-4. **Agent 友好**：默认 JSON 输出、Zod 校验入参、随包分发 Skill、密钥全程脱敏。
+```text
+cli.ts
+  → parseJsonArgs / parseArgFlags / flagsToArgs
+  → assertToolName(tool)
+  → initializeSearchers()
+  → handleToolCall(tool, args, searchers)
+      → parseToolArgs(tool, args)
+      → route to capability or platform searcher
+  → extract text / JSON payload
+  → diagnoseToolResult()
+  → JSON output
 ```
+
+`TOOLS`、`parseToolArgs()`、`handleToolCall()` 是当前最重要的 CLI 契约三角。下一阶段任何注册表派生都必须保持三者输出不变。
+
+### 6.3 metadata search
+
+```text
+paper-search search "query"
+  → search_papers
+  → SearchPapersSchema
+  → searchMultipleSources(searchers, query, sources, options)
+      → parse source list / alias normalize
+      → per-source search with timeout isolation
+      → Promise.allSettled
+      → dedupe by DOI, title+author, source id
+  → { sources_used, source_results, errors, failed_sources, total, papers }
+```
+
+特点：多源并发、单源失败不阻塞整体、结果去重、默认 JSON 输出。
+
+### 6.4 citation expansion
+
+```text
+paper-search run get_paper_citations / get_paper_references
+  → CitationLookupSchema
+  → resolveCitationTarget(paperId > doi > arxivId)
+  → CitationService.getCitations() / getReferences()
+  → Semantic Scholar Graph API
+  → { target, relation, provider, total, papers }
+```
+
+`doi` 会转换成 `DOI:<doi>`；`arxivId` 会转换成 `ARXIV:<id>`；`limit` 默认为 100，范围 1–100。
+
+### 6.5 PDF fallback
+
+```text
+download_with_fallback
+  → build DownloadTierContext
+  → run DEFAULT_DOWNLOAD_TIERS in order
+      1. primary
+      2. direct_pdf_url
+      3. repositories
+      4. unpaywall
+      5. scihub
+  → first ok path returns success
+  → otherwise returns error with attempts
+```
+
+当前 `DownloadTier` 接口已经存在，但 tier 列表仍是文件内固定数组。下一步应把 tier factory、插入函数和可注入 tiers 明确化，方便未来 `institutional_access` 在 Unpaywall 之后、Sci-Hub 之前插入。
+
+### 6.6 management layer
+
+```text
+doctor/status/smoke/skills/config/tools
+  → 读取配置、能力画像、平台状态、Skill 安装状态
+  → 输出脱敏 JSON 或显式 text report
+```
+
+这条支线的目标是让工具“可被正确使用”，而不是替代文献检索实现。
+
+---
+
+## 7. 核心抽象现状
+
+### 7.1 `PaperSource`
+
+所有平台 Searcher 继承 `PaperSource`，统一暴露：
+
+- `search(query, options)`
+- `downloadPdf(paperId, options)`
+- `readPaper(paperId, options)`
+- `getCapabilities()`
+- `getPaperByDoi(doi)` 等公共能力
+
+新增普通平台的算法适配主要应写在新的 `platforms/XxxSearcher.ts`。
+
+### 7.2 `platformMetadata`
+
+`core/platformMetadata.ts` 是数据源注册表雏形，已记录：
+
+- `id`
+- `aliases`
+- `displayName`
+- `sourceKind`
+- `defaultInAll`
+- `directTool`
+- `toolName`
+- `configKeys`
+- `optionalConfigKeys`
+- `supportedOptions`
+- `description`
+
+但它还不是完整单一事实源。工具 schema、Searcher 实例化、能力画像分组、DOI lookup source、repository source、HTTP policy 仍有多处手写清单。
+
+### 7.3 `Searchers`
+
+`initializeSearchers()` 仍然逐个 import、逐个 `new`，并手写 alias 字段。下一阶段应拆出 `PlatformFactoryRegistry`，让 canonical source 和 alias 从 metadata 派生。
+
+### 7.4 `HttpClient`
+
+`utils/HttpClient.ts` 当前主要负责全局 proxy 设置，并没有成为统一请求包装层。多数平台仍直接使用 axios。下一阶段应把常规 HTTP 请求收敛到统一 `HttpClient`，并通过 `HttpPolicyRegistry` 声明平台策略。
+
+### 7.5 `DownloadTier`
+
+`DownloadTier` 已经存在，当前默认顺序已经稳定。但它仍需要从“文件内重排”升级为“可注入 / 可插入”的轻量扩展点。
+
+---
+
+## 8. 当前技术债清单
+
+| 债务 | 当前表现 | 下一步处理 |
+|---|---|---|
+| 平台事实源仍未完全收敛 | `tools.ts`、`schemas.ts`、`handleToolCall.ts`、`searchers.ts`、`capabilityProfile.ts` 仍有手写平台清单 | 先加契约快照，再做平台工具 / schema / factory 派生 |
+| `HttpClient` 名不副实 | 只做 proxy，平台直接用 axios | 建 `HttpPolicyRegistry`，逐平台迁移常规请求 |
+| `DownloadTier` 插拔性不足 | 默认 tiers 是文件内常量，未来插入仍需改核心文件 | 导出 tier factory、插入函数、可注入 tiers 参数 |
+| 文档状态可能不一致 | `docs/refactor/README.md` 可能仍写 01–04 “可执行” | 改为“已完成”，并指向 05 修复计划 |
+| README badge 可能滞后 | package 为 0.3.1，README badge 仍可能显示 0.3.0 | 同步 README / README.zh.md badge |
+
+---
+
+## 9. 稳定契约
+
+后续重构必须保持以下契约不变：
+
+- `paper-search tools --pretty` 工具名集合。
+- 每个工具的 `inputSchema`、`required`、enum、默认参数语义。
+- `paper-search run` 的 unknown tool 错误行为。
+- `search_papers`、`get_paper_by_doi`、`download_with_fallback`、`query_journal_metrics` 的 JSON 输出结构。
+- `download_with_fallback` attempts 顺序和字段结构。
+- alias 解析：如 `wos -> webofscience`、`scholar -> googlescholar`、`springerlink -> springer`。
+- Capability Profile 的能力名和状态判定边界。
+- Skill / README 不声称 WebVPN、CARSI、EZProxy、institutional login 已实现。
+
+推荐把这些契约固化为测试，再做结构性重构。
+
+---
+
+## 10. 下一阶段架构调整方向
+
+下一阶段不应继续扩展 citation expansion，而应进入结构性修复：
+
+1. 文档收敛：标记 01–04 已完成；同步 README badge；让当前架构、目标架构、执行任务书一致。
+2. `DownloadTier` 小修：让 tier 列表可注入，修正 direct metadata DOI lookup，增强 Unpaywall 缺失保护。
+3. 契约测试：冻结 tools schema、alias、capability profile、fallback attempts。
+4. 数据源注册表派生：从 generic 平台工具开始，逐步减少手写平台清单。
+5. Searcher factory registry：把 `initializeSearchers()` 从手写对象改成 metadata + factory 派生。
+6. 统一 HttpClient：先建接口和 policy registry，再逐平台迁移。
+
+完整执行指引见 [`refactor/05-agent-repair-plan.md`](./refactor/05-agent-repair-plan.md)。
