@@ -6,39 +6,42 @@
 
 | 文档 | 状态 | 执行结论 |
 | --- | --- | --- |
-| [01-citation-tools.md](./01-citation-tools.md) | 可执行 | 接入现有 `CitationService`，新增施引文献和参考文献工具。 |
-| [02-download-tier-interface.md](./02-download-tier-interface.md) | 可执行 | 重排 PDF fallback 为 `DownloadTier`，保持现有下载行为。 |
-| [03-skill-cli-contract-update.md](./03-skill-cli-contract-update.md) | 可执行 | 同步 CLI、Skill、README 契约。 |
-| [04-citation-tests-and-acceptance.md](./04-citation-tests-and-acceptance.md) | 可执行 | 为 01 到 03 补测试并跑最终验收。 |
-| [future-webvpn-carsi-ezproxy.md](./future-webvpn-carsi-ezproxy.md) | 未来执行 | 等 `DownloadTier` 完成后接入机构访问。 |
+| [01-citation-tools.md](./01-citation-tools.md) | 已完成 | `get_paper_citations` / `get_paper_references` 已接入 `TOOLS`、schema、handler 和 `CitationService`。 |
+| [02-download-tier-interface.md](./02-download-tier-interface.md) | 已完成 | `download_with_fallback` 已改为 `DownloadTier` 顺序执行，默认 attempts 不包含 `institutional_access`。 |
+| [03-skill-cli-contract-update.md](./03-skill-cli-contract-update.md) | 已完成 | Skill、README、`cli-contract.md` 已同步 citation expansion 契约。 |
+| [04-citation-tests-and-acceptance.md](./04-citation-tests-and-acceptance.md) | 已完成 | 已补 citation schema / handler / Skill contract / fallback attempts 测试。 |
+| [05-agent-repair-plan.md](./05-agent-repair-plan.md) | 可执行 | 收敛文档状态、冻结契约、修补 `DownloadTier` 插拔点，并启动下一阶段架构准备。 |
+| [future-webvpn-carsi-ezproxy.md](./future-webvpn-carsi-ezproxy.md) | 未来执行 | 只能在 `DownloadTier` 稳定后，通过 `institutional_access` tier 显式启用。 |
 
 ## 当前执行顺序
 
-1. 执行 [01-citation-tools.md](./01-citation-tools.md)。
-2. 执行 [02-download-tier-interface.md](./02-download-tier-interface.md)。
-3. 执行 [03-skill-cli-contract-update.md](./03-skill-cli-contract-update.md)。
-4. 执行 [04-citation-tests-and-acceptance.md](./04-citation-tests-and-acceptance.md)。
+1. 执行 [05-agent-repair-plan.md](./05-agent-repair-plan.md)。
+2. `05` 完成后，再按 `ARCHITECTURE_REFACTOR.zh.md` 的三轴边界拆分后续任务：平台注册表派生、Searcher factory registry、统一 HttpClient。
 
-`01` 和 `02` 可并行开发；`03` 依赖 `01` 的工具名和 schema；`04` 在 `01` 到 `03` 完成后执行。
+历史任务 `01` 到 `04` 已完成，不应重复执行。若需要回看实现边界，只把它们作为记录和验收依据。
 
 ## 未来执行
 
-WebVPN / CARSI / EZProxy 接入只走 [future-webvpn-carsi-ezproxy.md](./future-webvpn-carsi-ezproxy.md)。该任务依赖 `02`，不得跳过 `DownloadTier` 直接写机构登录逻辑。
+WebVPN / CARSI / EZProxy 接入只走 [future-webvpn-carsi-ezproxy.md](./future-webvpn-carsi-ezproxy.md)。该任务依赖 `DownloadTier`，不得跳过 `DownloadTier` 直接写机构登录逻辑。
 
 ## 文档关系
 
 - 当前现状：[../ARCHITECTURE.zh.md](../ARCHITECTURE.zh.md)
 - 目标总架构：[../ARCHITECTURE_REFACTOR.zh.md](../ARCHITECTURE_REFACTOR.zh.md)
-- 当前执行：本目录 `01` 到 `04`
+- 当前执行：本目录 `05-agent-repair-plan.md`
+- 历史完成：本目录 `01` 到 `04`
 - 未来执行：本目录 `future-webvpn-carsi-ezproxy.md`
 
 ## 非目标
 
 - 不在索引里重复实现细节。
 - 不把未来机构访问写成当前能力。
+- 不把已完成任务继续标记为待执行。
 
 ## 验收标准
 
-- `01` 到 `04` 均包含目标、改动点、执行步骤、非目标、验收标准。
+- `01` 到 `04` 明确标为已完成。
+- `05-agent-repair-plan.md` 包含目标、边界、阶段、验收标准和非目标。
 - `future-webvpn-carsi-ezproxy.md` 明确依赖 `DownloadTier`。
-- `../ARCHITECTURE_REFACTOR.zh.md` 只指向本索引和本目录文档。
+- `../ARCHITECTURE.zh.md` 描述当前 v0.3.1 架构。
+- `../ARCHITECTURE_REFACTOR.zh.md` 继续作为三轴目标态总览。
