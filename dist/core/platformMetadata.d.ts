@@ -1,5 +1,7 @@
 import type { SearchOptions } from '../platforms/PaperSource.js';
 export type PlatformSourceKind = 'official-api' | 'metadata-proxy' | 'html' | 'alias';
+export type CapabilityGroup = 'metadata_search' | 'citation_expansion' | 'body_snippet_search' | 'journal_metrics' | 'pdf_discovery' | 'entitled_access';
+export type PlatformSchemaKind = 'generic' | 'arxiv' | 'webofscience' | 'pubmed' | 'biorxiv' | 'medrxiv' | 'semantic-scholar' | 'google-scholar' | 'iacr' | 'core' | 'springer' | 'sciencedirect' | 'scopus' | 'wiley-deprecated' | 'crossref' | 'openalex' | 'pmc-style' | 'unpaywall' | 'scihub' | 'custom';
 export interface PlatformMetadata {
     id: string;
     aliases?: string[];
@@ -11,6 +13,13 @@ export interface PlatformMetadata {
     configKeys?: string[][];
     optionalConfigKeys?: string[][];
     supportedOptions: (keyof SearchOptions)[];
+    schemaKind?: PlatformSchemaKind;
+    optionCaps?: {
+        maxResults?: number;
+    };
+    capabilityGroups?: CapabilityGroup[];
+    supportsDoiLookup?: boolean;
+    isRepository?: boolean;
     description?: string;
 }
 export declare const PLATFORM_METADATA: PlatformMetadata[];
@@ -25,4 +34,6 @@ export declare function getDefaultAllSources(): string[];
 export declare function getAliasMap(): Record<string, string>;
 export declare function getGenericSearchToolPlatform(toolName: string): string | undefined;
 export declare function getGenericSearchToolNames(): string[];
+export declare function getPlatformToolDescriptors(): PlatformMetadata[];
+export declare function getGenericPlatformToolDescriptors(): PlatformMetadata[];
 //# sourceMappingURL=platformMetadata.d.ts.map

@@ -2,6 +2,26 @@ import axios from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { logDebug } from './Logger.js';
+export class HttpClient {
+    policy;
+    constructor(policy = {}) {
+        this.policy = policy;
+    }
+    async request(config) {
+        const response = await axios.request({
+            ...config,
+            timeout: config.timeout ?? this.policy.timeoutMs,
+            validateStatus: config.validateStatus ?? this.policy.validateStatus,
+            headers: this.policy.userAgent
+                ? {
+                    ...config.headers,
+                    'User-Agent': this.policy.userAgent
+                }
+                : config.headers
+        });
+        return response.data;
+    }
+}
 /**
  * Initializes global HTTP/HTTPS and SOCKS proxy agents for Axios
  * based on standard proxy environment variables.

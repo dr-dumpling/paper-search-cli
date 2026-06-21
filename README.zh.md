@@ -8,7 +8,7 @@ Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-25-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 [快速开始](#快速开始) | [架构说明](#架构说明) | [配置](#配置) | [Agent Skill](#agent-skill) | [支持平台](#支持平台) | [命令](#命令) | [排障](#排障)

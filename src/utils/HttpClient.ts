@@ -1,7 +1,39 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { logDebug } from './Logger.js';
+
+export interface HttpPolicy {
+  rateLimit?: { rps: number; burst?: number };
+  cache?: { ttlMs: number; maxSize?: number };
+  timeoutMs?: number;
+  retry?: { maxRetries: number };
+  userAgent?: string;
+  validateStatus?: (status: number) => boolean;
+}
+
+export interface HttpRequestConfig extends AxiosRequestConfig {
+  cacheKey?: string;
+}
+
+export class HttpClient {
+  constructor(private readonly policy: HttpPolicy = {}) {}
+
+  async request<T>(config: HttpRequestConfig): Promise<T> {
+    const response = await axios.request<T>({
+      ...config,
+      timeout: config.timeout ?? this.policy.timeoutMs,
+      validateStatus: config.validateStatus ?? this.policy.validateStatus,
+      headers: this.policy.userAgent
+        ? {
+            ...config.headers,
+            'User-Agent': this.policy.userAgent
+          }
+        : config.headers
+    });
+    return response.data;
+  }
+}
 
 /**
  * Initializes global HTTP/HTTPS and SOCKS proxy agents for Axios

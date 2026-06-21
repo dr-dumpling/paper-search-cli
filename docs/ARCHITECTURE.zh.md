@@ -40,7 +40,7 @@
 | `03-skill-cli-contract-update.md` | 已完成 | README、Skill、`cli-contract.md` 已同步 citation expansion 工具与能力地图 |
 | `04-citation-tests-and-acceptance.md` | 已完成 | 已补 schema、handler、Skill contract、OpenAccessFallbackService 的相关测试 |
 
-需要注意：如果 `docs/refactor/README.md` 仍把 01–04 标为“可执行”，应在下一次文档修复中改为“已完成”，避免 Agent 重复执行已完成任务。
+`docs/refactor/README.md` 已将 `01` 到 `04` 标为“已完成”，当前执行入口收敛到 `05-agent-repair-plan.md`，避免 Agent 重复执行已完成任务。
 
 ---
 
@@ -283,8 +283,8 @@ doctor/status/smoke/skills/config/tools
 | 平台事实源仍未完全收敛 | `tools.ts`、`schemas.ts`、`handleToolCall.ts`、`searchers.ts`、`capabilityProfile.ts` 仍有手写平台清单 | 先加契约快照，再做平台工具 / schema / factory 派生 |
 | `HttpClient` 名不副实 | 只做 proxy，平台直接用 axios | 建 `HttpPolicyRegistry`，逐平台迁移常规请求 |
 | `DownloadTier` 插拔性不足 | 默认 tiers 是文件内常量，未来插入仍需改核心文件 | 导出 tier factory、插入函数、可注入 tiers 参数 |
-| 文档状态可能不一致 | `docs/refactor/README.md` 可能仍写 01–04 “可执行” | 改为“已完成”，并指向 05 修复计划 |
-| README badge 可能滞后 | package 为 0.3.1，README badge 仍可能显示 0.3.0 | 同步 README / README.zh.md badge |
+| 文档状态收敛 | `docs/refactor/README.md` 已将 01–04 标为“已完成”，当前执行入口为 05 | 后续只维护 05 与未来专项文档，不重复执行历史任务 |
+| README badge 同步 | package 与 README / README.zh badge 均应保持 0.3.1 | 发布前把版本徽章纳入固定检查 |
 
 ---
 

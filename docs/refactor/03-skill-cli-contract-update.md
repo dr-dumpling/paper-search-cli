@@ -1,6 +1,6 @@
 # 03 - Skill And CLI Contract Update
 
-状态：可执行。该任务在 `01-citation-tools.md` 完成后执行。
+状态：已完成。CLI、Skill、README 和 `cli-contract.md` 已同步 citation expansion 契约；本文保留为历史执行依据。
 
 ## 目标
 

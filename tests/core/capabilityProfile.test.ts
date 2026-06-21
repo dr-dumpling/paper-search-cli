@@ -38,6 +38,14 @@ describe('capabilityProfile', () => {
     const byId = Object.fromEntries(profile.entries.map(entry => [entry.id, entry]));
 
     expect(profile.ok).toBe(true);
+    expect(profile.entries.map(entry => entry.id)).toEqual([
+      'metadata_search',
+      'citation_expansion',
+      'body_snippet_search',
+      'journal_metrics',
+      'pdf_discovery',
+      'entitled_access'
+    ]);
     expect(byId.metadata_search.status).toBe('available');
     expect(byId.metadata_search.configured).not.toContain('scihub');
     expect(byId.metadata_search.reason).toContain('Sci-Hub is excluded');

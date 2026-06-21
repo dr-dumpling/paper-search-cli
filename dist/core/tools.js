@@ -1,4 +1,4 @@
-import { PLATFORM_METADATA, SEARCH_PLATFORM_VALUES } from './platformMetadata.js';
+import { SEARCH_PLATFORM_VALUES, getGenericPlatformToolDescriptors } from './platformMetadata.js';
 const BASE_TOOLS = [
     {
         name: 'search_papers',
@@ -725,8 +725,7 @@ const GENERIC_SEARCH_PROPERTIES = {
     }
 };
 function createRegistrySearchTools() {
-    const tools = PLATFORM_METADATA
-        .filter(platform => platform.directTool && platform.toolName)
+    const tools = getGenericPlatformToolDescriptors()
         .map(platform => ({
         name: platform.toolName,
         description: platform.description || `Search academic papers from ${platform.displayName}`,

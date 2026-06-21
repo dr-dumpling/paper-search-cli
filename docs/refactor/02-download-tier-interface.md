@@ -1,6 +1,6 @@
 # 02 - DownloadTier Interface
 
-状态：可执行。当前 PDF fallback 集中在 `src/services/OpenAccessFallbackService.ts`，本任务只重排该文件内的 fallback 编排。
+状态：已完成。`download_with_fallback` 已重排为 `DownloadTier` 顺序执行；本文保留为历史执行依据。
 
 ## 目标
 

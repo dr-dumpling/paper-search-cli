@@ -1,6 +1,6 @@
 # 01 - Citation Tools
 
-状态：可执行。当前代码已经有 `src/services/CitationService.ts`，本任务只把它注册成 agent-facing 工具。
+状态：已完成。`get_paper_citations` 和 `get_paper_references` 已接入 `TOOLS`、schema、handler 和 `CitationService`；本文保留为历史执行依据。
 
 ## 目标
 

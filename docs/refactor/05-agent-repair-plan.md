@@ -311,7 +311,7 @@ npm run build
 src/core/platformMetadata.ts
 ```
 
-建议增加：
+建议增加。以下代码块是接口草案，执行时必须补齐新增类型定义，不能直接留下未定义的 `CapabilityGroup` 一类占位符：
 
 ```ts
 export type PlatformSchemaKind =
@@ -388,15 +388,20 @@ switch (toolName) {
 src/core/platformFactories.ts
 ```
 
-建议接口：
+建议接口。执行时可以在此基础上加入轻量 context 参数以复用已创建实例，例如 `USENIXSearcher` 依赖 `DBLPSearcher`，不要为追求伪代码一致而重复创建共享 searcher：
 
 ```ts
-export type PlatformFactory = (env: NodeJS.ProcessEnv) => PaperSource;
+export interface PlatformFactoryContext {
+  env: NodeJS.ProcessEnv;
+  instances: Record<string, PaperSource>;
+}
+
+export type PlatformFactory = (context: PlatformFactoryContext) => PaperSource;
 
 export const PLATFORM_FACTORIES: Record<string, PlatformFactory> = {
   arxiv: () => new ArxivSearcher(),
-  crossref: env => new CrossrefSearcher(env.CROSSREF_MAILTO),
-  pubmed: env => new PubMedSearcher(env.PUBMED_API_KEY),
+  crossref: ({ env }) => new CrossrefSearcher(env.CROSSREF_MAILTO),
+  pubmed: ({ env }) => new PubMedSearcher(env.PUBMED_API_KEY),
   // ...
 };
 ```
@@ -414,7 +419,7 @@ const wosSearcher = new WebOfScienceSearcher(...);
 for (const platform of PLATFORM_METADATA) {
   const factory = PLATFORM_FACTORIES[platform.id];
   if (!factory) continue;
-  const instance = factory(process.env);
+  const instance = factory({ env: process.env, instances: searchers });
   searchers[platform.id] = instance;
   for (const alias of platform.aliases || []) {
     searchers[alias] = instance;
@@ -457,6 +462,8 @@ export class HttpClient {
 }
 ```
 
+`HttpRequestConfig` 需要在 `utils/HttpClient.ts` 中显式定义或从 axios config 类型收窄导出，不要留下未定义类型。
+
 保留 `setupGlobalProxy()`，避免破坏 CLI 启动流程。
 
 ### 5.3 建立 httpPolicies
@@ -496,10 +503,11 @@ npm run build
 node dist/cli.js tools --pretty
 node dist/cli.js doctor --pretty
 node dist/cli.js run get_paper_citations --arg doi="10.1038/nature12373" --arg limit=1 --pretty
-node dist/cli.js run download_with_fallback --json-args '{"source":"crossref","paperId":"10.1000/example","doi":"10.1000/example","useSciHub":false}' --pretty
+node dist/cli.js run download_with_fallback --json-args '{"source":"crossref","paperId":"not-a-real-doi-for-contract-check","useSciHub":false}' --pretty
 ```
 
 允许 citation live call 因网络、429 或外部 API 失败而失败，但 schema、路由和输出包装必须正确。
+`download_with_fallback` 的人工检查应使用不会命中真实 PDF 的占位 ID，避免验收命令产生下载副作用；该命令应返回 `scihub` stage 且状态为 `skipped`。
 
 ---
 

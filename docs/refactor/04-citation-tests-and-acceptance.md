@@ -1,6 +1,6 @@
 # 04 - Citation Tests And Acceptance
 
-状态：可执行。该任务在 `01` 到 `03` 完成后执行。
+状态：已完成。citation schema / handler / Skill contract / fallback attempts 测试已补齐；本文保留为历史执行依据。
 
 ## 目标
 

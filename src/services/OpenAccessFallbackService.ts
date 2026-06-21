@@ -45,37 +45,70 @@ export const INSTITUTIONAL_ACCESS_TIER_ID = 'institutional_access';
 
 const REPOSITORY_SOURCES = ['pmc', 'europepmc', 'core', 'openaire'];
 
-const DEFAULT_DOWNLOAD_TIERS: DownloadTier[] = [
-  {
+export function createDefaultDownloadTiers(): DownloadTier[] {
+  return [
+    createPrimaryTier(),
+    createDirectPdfUrlTier(),
+    createRepositoryTier(),
+    createUnpaywallTier(),
+    createSciHubTier()
+  ];
+}
+
+export function insertDownloadTierBefore(
+  tiers: DownloadTier[],
+  beforeStage: string,
+  tier: DownloadTier
+): DownloadTier[] {
+  const index = tiers.findIndex(item => item.stage === beforeStage);
+  if (index < 0) return [...tiers, tier];
+  return [...tiers.slice(0, index), tier, ...tiers.slice(index)];
+}
+
+function createPrimaryTier(): DownloadTier {
+  return {
     id: 'primary',
     stage: 'primary',
     run: tryPrimaryDownload
-  },
-  {
+  };
+}
+
+function createDirectPdfUrlTier(): DownloadTier {
+  return {
     id: 'direct_pdf_url',
     stage: 'direct_pdf_url',
     run: tryDirectMetadataUrl
-  },
-  {
+  };
+}
+
+function createRepositoryTier(): DownloadTier {
+  return {
     id: 'repositories',
     stage: 'repositories',
     run: tryRepositoryFallback
-  },
-  {
+  };
+}
+
+function createUnpaywallTier(): DownloadTier {
+  return {
     id: 'unpaywall',
     stage: 'unpaywall',
     run: tryUnpaywall
-  },
-  {
+  };
+}
+
+function createSciHubTier(): DownloadTier {
+  return {
     id: 'scihub',
     stage: 'scihub',
     run: trySciHub
-  }
-];
+  };
+}
 
 export async function downloadWithFallback(
   searchers: Searchers,
-  options: DownloadWithFallbackOptions
+  options: DownloadWithFallbackOptions,
+  tiers: DownloadTier[] = createDefaultDownloadTiers()
 ): Promise<DownloadWithFallbackResult> {
   const savePath = options.savePath || './downloads';
   const attempts: DownloadWithFallbackResult['attempts'] = [];
@@ -89,7 +122,7 @@ export async function downloadWithFallback(
     useSciHub: options.useSciHub !== false
   };
 
-  for (const tier of DEFAULT_DOWNLOAD_TIERS) {
+  for (const tier of tiers) {
     const result = await tier.run(context);
     attempts.push({ stage: tier.stage, status: result.status, message: result.message });
     if (result.status === 'ok' && result.path) {
@@ -121,7 +154,8 @@ async function tryDirectMetadataUrl(context: DownloadTierContext): Promise<Downl
   }
 
   try {
-    const paper = await searcher.getPaperByDoi(context.paperId);
+    const lookupId = context.doi || context.paperId;
+    const paper = await searcher.getPaperByDoi(lookupId);
     if (!paper?.pdfUrl) {
       return { status: 'skipped', message: 'No pdf_url found in source metadata.' };
     }
@@ -164,8 +198,12 @@ async function tryUnpaywall(context: DownloadTierContext): Promise<DownloadTierR
     return { status: 'skipped', message: 'DOI not provided.' };
   }
 
+  const unpaywall = context.searchers.unpaywall as UnpaywallSearcher | undefined;
+  if (!unpaywall?.resolveBestPdfUrl) {
+    return { status: 'skipped', message: 'Unpaywall searcher unavailable.' };
+  }
+
   try {
-    const unpaywall = context.searchers.unpaywall as UnpaywallSearcher;
     const pdfUrl = await unpaywall.resolveBestPdfUrl(context.doi);
     if (!pdfUrl) {
       return { status: 'skipped', message: 'No OA PDF URL found or email not configured.' };

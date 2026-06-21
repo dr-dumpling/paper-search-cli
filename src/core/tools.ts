@@ -1,4 +1,4 @@
-import { PLATFORM_METADATA, SEARCH_PLATFORM_VALUES } from './platformMetadata.js';
+import { SEARCH_PLATFORM_VALUES, getGenericPlatformToolDescriptors } from './platformMetadata.js';
 
 export interface CliTool {
   name: string;
@@ -746,8 +746,7 @@ const GENERIC_SEARCH_PROPERTIES = {
 };
 
 function createRegistrySearchTools(): CliTool[] {
-  const tools = PLATFORM_METADATA
-    .filter(platform => platform.directTool && platform.toolName)
+  const tools = getGenericPlatformToolDescriptors()
     .map(platform => ({
       name: platform.toolName as string,
       description: platform.description || `Search academic papers from ${platform.displayName}`,

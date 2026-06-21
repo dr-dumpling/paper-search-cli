@@ -37,5 +37,7 @@ export interface DownloadTierResult {
     message: string;
 }
 export declare const INSTITUTIONAL_ACCESS_TIER_ID = "institutional_access";
-export declare function downloadWithFallback(searchers: Searchers, options: DownloadWithFallbackOptions): Promise<DownloadWithFallbackResult>;
+export declare function createDefaultDownloadTiers(): DownloadTier[];
+export declare function insertDownloadTierBefore(tiers: DownloadTier[], beforeStage: string, tier: DownloadTier): DownloadTier[];
+export declare function downloadWithFallback(searchers: Searchers, options: DownloadWithFallbackOptions, tiers?: DownloadTier[]): Promise<DownloadWithFallbackResult>;
 //# sourceMappingURL=OpenAccessFallbackService.d.ts.map

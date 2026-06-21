@@ -4,14 +4,20 @@ export const PLATFORM_METADATA = [
         displayName: 'Crossref',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'year', 'author', 'sortBy', 'sortOrder']
+        supportedOptions: ['maxResults', 'year', 'author', 'sortBy', 'sortOrder'],
+        schemaKind: 'crossref',
+        supportsDoiLookup: true,
+        capabilityGroups: ['metadata_search']
     },
     {
         id: 'openalex',
         displayName: 'OpenAlex',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'year']
+        supportedOptions: ['maxResults', 'year'],
+        schemaKind: 'openalex',
+        supportsDoiLookup: true,
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'pubmed',
@@ -19,7 +25,10 @@ export const PLATFORM_METADATA = [
         sourceKind: 'official-api',
         defaultInAll: true,
         optionalConfigKeys: [['PUBMED_API_KEY'], ['NCBI_EMAIL'], ['NCBI_TOOL']],
-        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy']
+        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy'],
+        schemaKind: 'pubmed',
+        supportsDoiLookup: true,
+        capabilityGroups: ['metadata_search']
     },
     {
         id: 'pmc',
@@ -27,7 +36,11 @@ export const PLATFORM_METADATA = [
         displayName: 'PubMed Central',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'year']
+        supportedOptions: ['maxResults', 'year'],
+        schemaKind: 'pmc-style',
+        supportsDoiLookup: true,
+        isRepository: true,
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'europepmc',
@@ -35,28 +48,38 @@ export const PLATFORM_METADATA = [
         displayName: 'Europe PMC',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'year']
+        supportedOptions: ['maxResults', 'year'],
+        schemaKind: 'pmc-style',
+        supportsDoiLookup: true,
+        isRepository: true,
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'arxiv',
         displayName: 'arXiv',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'year', 'author', 'category', 'sortBy', 'sortOrder']
+        supportedOptions: ['maxResults', 'year', 'author', 'category', 'sortBy', 'sortOrder'],
+        schemaKind: 'arxiv',
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'biorxiv',
         displayName: 'bioRxiv',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'days', 'category']
+        supportedOptions: ['maxResults', 'days', 'category'],
+        schemaKind: 'biorxiv',
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'medrxiv',
         displayName: 'medRxiv',
         sourceKind: 'official-api',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'days', 'category']
+        supportedOptions: ['maxResults', 'days', 'category'],
+        schemaKind: 'medrxiv',
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'semantic',
@@ -64,14 +87,19 @@ export const PLATFORM_METADATA = [
         sourceKind: 'official-api',
         defaultInAll: true,
         optionalConfigKeys: [['SEMANTIC_SCHOLAR_API_KEY']],
-        supportedOptions: ['maxResults', 'year', 'fieldsOfStudy', 'sortBy']
+        supportedOptions: ['maxResults', 'year', 'fieldsOfStudy', 'sortBy'],
+        schemaKind: 'semantic-scholar',
+        supportsDoiLookup: true,
+        capabilityGroups: ['metadata_search', 'citation_expansion', 'body_snippet_search', 'pdf_discovery']
     },
     {
         id: 'iacr',
         displayName: 'IACR ePrint',
         sourceKind: 'html',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'fetchDetails']
+        supportedOptions: ['maxResults', 'fetchDetails'],
+        schemaKind: 'iacr',
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'core',
@@ -79,7 +107,10 @@ export const PLATFORM_METADATA = [
         sourceKind: 'official-api',
         defaultInAll: true,
         optionalConfigKeys: [['CORE_API_KEY']],
-        supportedOptions: ['maxResults', 'year']
+        supportedOptions: ['maxResults', 'year'],
+        schemaKind: 'core',
+        isRepository: true,
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'openaire',
@@ -87,7 +118,10 @@ export const PLATFORM_METADATA = [
         sourceKind: 'official-api',
         defaultInAll: true,
         optionalConfigKeys: [['OPENAIRE_API_KEY']],
-        supportedOptions: ['maxResults', 'year']
+        supportedOptions: ['maxResults', 'year'],
+        schemaKind: 'pmc-style',
+        isRepository: true,
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'googlescholar',
@@ -95,7 +129,9 @@ export const PLATFORM_METADATA = [
         displayName: 'Google Scholar',
         sourceKind: 'html',
         defaultInAll: true,
-        supportedOptions: ['maxResults', 'year', 'author']
+        supportedOptions: ['maxResults', 'year', 'author'],
+        schemaKind: 'google-scholar',
+        capabilityGroups: ['metadata_search']
     },
     {
         id: 'webofscience',
@@ -105,7 +141,9 @@ export const PLATFORM_METADATA = [
         defaultInAll: true,
         configKeys: [['WOS_API_KEY']],
         optionalConfigKeys: [['WOS_API_VERSION']],
-        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder']
+        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder'],
+        schemaKind: 'webofscience',
+        capabilityGroups: ['metadata_search', 'entitled_access']
     },
     {
         id: 'sciencedirect',
@@ -113,7 +151,9 @@ export const PLATFORM_METADATA = [
         sourceKind: 'official-api',
         defaultInAll: true,
         configKeys: [['ELSEVIER_API_KEY']],
-        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'openAccess']
+        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'openAccess'],
+        schemaKind: 'sciencedirect',
+        capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
     },
     {
         id: 'springer',
@@ -123,7 +163,9 @@ export const PLATFORM_METADATA = [
         defaultInAll: true,
         configKeys: [['SPRINGER_API_KEY']],
         optionalConfigKeys: [['SPRINGER_OPENACCESS_API_KEY']],
-        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'openAccess', 'subject', 'type']
+        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'openAccess', 'subject', 'type'],
+        schemaKind: 'springer',
+        capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
     },
     {
         id: 'scopus',
@@ -132,14 +174,18 @@ export const PLATFORM_METADATA = [
         defaultInAll: true,
         configKeys: [['ELSEVIER_API_KEY']],
         optionalConfigKeys: [['SCOPUS_SEARCH_API_KEY']],
-        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'affiliation', 'subject', 'openAccess', 'documentType']
+        supportedOptions: ['maxResults', 'year', 'author', 'journal', 'affiliation', 'subject', 'openAccess', 'documentType'],
+        schemaKind: 'scopus',
+        capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
     },
     {
         id: 'scihub',
         displayName: 'Sci-Hub',
         sourceKind: 'html',
         defaultInAll: true,
-        supportedOptions: ['maxResults']
+        supportedOptions: ['maxResults'],
+        schemaKind: 'scihub',
+        capabilityGroups: ['pdf_discovery']
     },
     {
         id: 'unpaywall',
@@ -147,7 +193,10 @@ export const PLATFORM_METADATA = [
         sourceKind: 'official-api',
         defaultInAll: true,
         configKeys: [['PAPER_SEARCH_UNPAYWALL_EMAIL', 'UNPAYWALL_EMAIL']],
-        supportedOptions: ['maxResults']
+        supportedOptions: ['maxResults'],
+        schemaKind: 'unpaywall',
+        isRepository: true,
+        capabilityGroups: ['metadata_search', 'pdf_discovery']
     },
     {
         id: 'dblp',
@@ -157,6 +206,8 @@ export const PLATFORM_METADATA = [
         directTool: true,
         toolName: 'search_dblp',
         supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder'],
+        schemaKind: 'generic',
+        capabilityGroups: ['metadata_search'],
         description: 'Search DBLP computer-science bibliography using the official public search API'
     },
     {
@@ -168,6 +219,8 @@ export const PLATFORM_METADATA = [
         toolName: 'search_ieee',
         configKeys: [['IEEE_API_KEY']],
         supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder', 'articleTitle', 'startRecord'],
+        schemaKind: 'generic',
+        capabilityGroups: ['metadata_search', 'entitled_access'],
         description: 'Search IEEE Xplore metadata using the official API. Requires IEEE_API_KEY.'
     },
     {
@@ -178,6 +231,8 @@ export const PLATFORM_METADATA = [
         directTool: true,
         toolName: 'search_acm',
         supportedOptions: ['maxResults', 'year', 'author', 'sortBy', 'sortOrder'],
+        schemaKind: 'generic',
+        capabilityGroups: ['metadata_search'],
         description: 'Search ACM metadata through Crossref/OpenAlex-style metadata, constrained to ACM DOI records'
     },
     {
@@ -188,6 +243,8 @@ export const PLATFORM_METADATA = [
         directTool: true,
         toolName: 'search_usenix',
         supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder'],
+        schemaKind: 'generic',
+        capabilityGroups: ['metadata_search'],
         description: 'Search USENIX-related paper metadata through DBLP-backed discovery'
     },
     {
@@ -198,6 +255,8 @@ export const PLATFORM_METADATA = [
         directTool: true,
         toolName: 'search_openreview',
         supportedOptions: ['maxResults', 'year', 'author', 'journal', 'venue'],
+        schemaKind: 'generic',
+        capabilityGroups: ['metadata_search'],
         description: 'Search public OpenReview notes using OpenReview APIs'
     }
 ];
@@ -244,15 +303,19 @@ export function getGenericSearchToolPlatform(toolName) {
     const aliasPlatform = GENERIC_TOOL_ALIASES.get(toolName);
     if (aliasPlatform)
         return aliasPlatform;
-    const platform = PLATFORM_METADATA.find(item => item.directTool && item.toolName === toolName);
+    const platform = getGenericPlatformToolDescriptors().find(item => item.toolName === toolName);
     return platform?.id;
 }
 export function getGenericSearchToolNames() {
     return [
-        ...PLATFORM_METADATA
-            .filter(item => item.directTool && item.toolName)
-            .map(item => item.toolName),
+        ...getGenericPlatformToolDescriptors().map(item => item.toolName),
         ...GENERIC_TOOL_ALIASES.keys()
     ];
+}
+export function getPlatformToolDescriptors() {
+    return PLATFORM_METADATA.filter(platform => platform.directTool && platform.toolName);
+}
+export function getGenericPlatformToolDescriptors() {
+    return getPlatformToolDescriptors().filter(platform => platform.schemaKind === 'generic');
 }
 //# sourceMappingURL=platformMetadata.js.map

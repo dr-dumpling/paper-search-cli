@@ -303,10 +303,10 @@ export declare const GetPaperByDoiSchema: z.ZodObject<{
     platform: z.ZodDefault<z.ZodOptional<z.ZodEnum<["arxiv", "webofscience", "pubmed", "crossref", "openalex", "unpaywall", "pmc", "europepmc", "core", "all"]>>>;
 }, "strip", z.ZodTypeAny, {
     doi: string;
-    platform: "crossref" | "openalex" | "pubmed" | "pmc" | "europepmc" | "arxiv" | "core" | "webofscience" | "unpaywall" | "all";
+    platform: "arxiv" | "webofscience" | "pubmed" | "core" | "crossref" | "openalex" | "unpaywall" | "pmc" | "europepmc" | "all";
 }, {
     doi: string;
-    platform?: "crossref" | "openalex" | "pubmed" | "pmc" | "europepmc" | "arxiv" | "core" | "webofscience" | "unpaywall" | "all" | undefined;
+    platform?: "arxiv" | "webofscience" | "pubmed" | "core" | "crossref" | "openalex" | "unpaywall" | "pmc" | "europepmc" | "all" | undefined;
 }>;
 export declare const SearchSciHubSchema: z.ZodObject<{
     doiOrUrl: z.ZodString;
