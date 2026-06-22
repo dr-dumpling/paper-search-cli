@@ -1,4 +1,4 @@
-import { SEARCH_PLATFORM_VALUES, getGenericPlatformToolDescriptors } from './platformMetadata.js';
+import { SEARCH_PLATFORM_VALUES, getGenericPlatformToolDescriptors } from '../registry/platformMetadata.js';
 import { SEARCH_SEMANTIC_SNIPPETS_TOOL } from '../capabilities/body-snippet-search/tools.js';
 import {
   GET_PAPER_CITATIONS_TOOL,

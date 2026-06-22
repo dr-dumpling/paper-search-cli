@@ -1,4 +1,4 @@
-import { getGenericPlatformToolDescriptors } from './platformMetadata.js';
+import { getGenericPlatformToolDescriptors } from '../registry/platformMetadata.js';
 import { SEARCH_SEMANTIC_SNIPPETS_TOOL } from '../capabilities/body-snippet-search/tools.js';
 import { GET_PAPER_CITATIONS_TOOL, GET_PAPER_REFERENCES_TOOL } from '../capabilities/citation-expansion/tools.js';
 import { QUERY_JOURNAL_METRICS_TOOL } from '../capabilities/journal-metrics/tools.js';

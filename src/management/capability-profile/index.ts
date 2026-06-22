@@ -1,4 +1,8 @@
 import { CONFIG_KEYS, listConfigEntries } from '../config/index.js';
+import {
+  getCapabilityProfileConfigKeysBySource,
+  getCapabilityProfileSources
+} from '../../registry/platformMetadata.js';
 
 export type CapabilityStatus = 'available' | 'degraded' | 'unavailable';
 
@@ -25,54 +29,13 @@ export interface CapabilityProfile {
   summary: Record<string, CapabilityStatus>;
 }
 
-const METADATA_FREE_SOURCES = [
-  'crossref',
-  'openalex',
-  'pubmed',
-  'pmc',
-  'europepmc',
-  'arxiv',
-  'biorxiv',
-  'medrxiv',
-  'semantic',
-  'iacr',
-  'core',
-  'openaire',
-  'googlescholar',
-  'dblp',
-  'acm',
-  'usenix',
-  'openreview'
-];
+const METADATA_FREE_SOURCES = getCapabilityProfileSources('metadata_free');
+const METADATA_ENTITLED_SOURCES = getCapabilityProfileSources('metadata_entitled');
+const OPEN_ACCESS_SOURCES = getCapabilityProfileSources('pdf_open_access');
+const ENTITLED_ACCESS_SOURCES = getCapabilityProfileSources('pdf_entitled');
+const SCIHUB_SOURCES = getCapabilityProfileSources('pdf_scihub');
 
-const METADATA_ENTITLED_SOURCES = ['webofscience', 'sciencedirect', 'springer', 'scopus', 'ieee'];
-const OPEN_ACCESS_SOURCES = [
-  'arxiv',
-  'biorxiv',
-  'medrxiv',
-  'pmc',
-  'europepmc',
-  'core',
-  'openaire',
-  'unpaywall',
-  'openalex_oa_metadata',
-  'semantic_open_access_pdf',
-  'springer_open_access',
-  'sciencedirect_open_access',
-  'scopus_open_access_metadata',
-  'iacr'
-];
-const ENTITLED_ACCESS_SOURCES = ['webofscience', 'sciencedirect', 'scopus', 'springer', 'ieee', 'wiley_tdm'];
-const SCIHUB_SOURCES = ['scihub'];
-
-const ENTITLED_KEY_BY_SOURCE: Record<string, string[]> = {
-  webofscience: ['WOS_API_KEY'],
-  sciencedirect: ['ELSEVIER_API_KEY'],
-  scopus: ['ELSEVIER_API_KEY'],
-  springer: ['SPRINGER_API_KEY'],
-  ieee: ['IEEE_API_KEY'],
-  wiley_tdm: ['WILEY_TDM_TOKEN']
-};
+const ENTITLED_KEY_BY_SOURCE = getCapabilityProfileConfigKeysBySource(['pdf_entitled']);
 
 export function buildCapabilityProfile(): CapabilityProfile {
   const configuredKeys = configuredConfigKeys();

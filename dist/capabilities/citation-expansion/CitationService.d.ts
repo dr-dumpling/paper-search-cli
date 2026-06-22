@@ -37,7 +37,7 @@ export declare class CitationService {
     /**
      * Get cache statistics
      */
-    getCacheStats(): import("../../utils/RequestCache.js").CacheStats;
+    getCacheStats(): import("../../infrastructure/cache/RequestCache.js").CacheStats;
     /**
      * Clear cache
      */

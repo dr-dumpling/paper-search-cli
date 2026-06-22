@@ -10,9 +10,9 @@ import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
-import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
+import { downloadPdfFromUrl, safeFilename } from '../infrastructure/pdf/PdfDownload.js';
 
 interface BioRxivSearchOptions extends SearchOptions {
   /** 搜索天数范围 */

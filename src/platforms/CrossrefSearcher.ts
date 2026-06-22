@@ -10,12 +10,12 @@
 import axios, { AxiosInstance } from 'axios';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
-import { sanitizeDoi, withTimeout } from '../utils/SecurityUtils.js';
+import { sanitizeDoi, withTimeout } from '../infrastructure/security/SecurityUtils.js';
 import { API_ENDPOINTS, DEFAULT_MAILTO, TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
-import { RequestCache } from '../utils/RequestCache.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
+import { RequestCache } from '../infrastructure/cache/RequestCache.js';
 
 export class CrossrefSearcher extends PaperSource {
   private client: AxiosInstance;

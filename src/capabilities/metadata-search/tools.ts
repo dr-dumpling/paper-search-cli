@@ -1,4 +1,4 @@
-import { SEARCH_PLATFORM_VALUES } from '../../core/platformMetadata.js';
+import { SEARCH_PLATFORM_VALUES } from '../../registry/platformMetadata.js';
 
 export const SEARCH_PAPERS_TOOL = {
   name: 'search_papers',

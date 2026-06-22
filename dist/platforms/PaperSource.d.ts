@@ -3,7 +3,7 @@
  * 定义了所有平台搜索器必须实现的核心接口
  */
 import { Paper } from '../models/Paper.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 export interface SearchOptions {
     /** 最大结果数量 */
     maxResults?: number;

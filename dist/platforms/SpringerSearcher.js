@@ -12,11 +12,11 @@
  * Note: Meta API v2 is the primary API. OpenAccess API may require special access.
  */
 import axios from 'axios';
-import { sanitizeDoi, escapeQueryValue, withTimeout } from '../utils/SecurityUtils.js';
+import { sanitizeDoi, escapeQueryValue, withTimeout } from '../infrastructure/security/SecurityUtils.js';
 import { PaperSource } from './PaperSource.js';
 import { PaperFactory } from '../models/Paper.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 import { QuotaManager } from '../utils/QuotaManager.js';
 import { logDebug, logWarn } from '../utils/Logger.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';

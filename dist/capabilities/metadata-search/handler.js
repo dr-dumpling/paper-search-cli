@@ -1,20 +1,9 @@
 import { TIMEOUTS } from '../../config/constants.js';
 import { PaperFactory } from '../../models/Paper.js';
 import { logDebug } from '../../utils/Logger.js';
-import { withTimeout } from '../../utils/SecurityUtils.js';
-import { getPlatformMetadata, resolvePlatformId } from '../../core/platformMetadata.js';
+import { withTimeout } from '../../infrastructure/security/SecurityUtils.js';
+import { getDoiLookupSources, getPlatformMetadata, resolvePlatformId } from '../../registry/platformMetadata.js';
 import { searchMultipleSources } from './MultiSourceSearchService.js';
-const DOI_LOOKUP_SOURCES = [
-    'crossref',
-    'openalex',
-    'unpaywall',
-    'pubmed',
-    'pmc',
-    'europepmc',
-    'core',
-    'webofscience',
-    'arxiv'
-];
 function jsonTextResponse(text) {
     return {
         content: [
@@ -85,8 +74,9 @@ export async function handleGetPaperByDoi(args, searchers) {
     const sourceResults = {};
     const errors = {};
     const failedSources = [];
+    const doiLookupSources = getDoiLookupSources();
     if (platform === 'all') {
-        const selected = DOI_LOOKUP_SOURCES.filter(source => source in searchers);
+        const selected = doiLookupSources.filter(source => source in searchers);
         const settled = await Promise.allSettled(selected.map(async (source) => {
             const searcher = searchers[source];
             const paper = await withTimeout(searcher.getPaperByDoi(doi), TIMEOUTS.SOURCE_TASK, `${source} DOI lookup timed out after ${TIMEOUTS.SOURCE_TASK}ms`);
@@ -132,7 +122,7 @@ export async function handleGetPaperByDoi(args, searchers) {
             const result = {
                 doi,
                 sources_requested: 'all',
-                sources_used: DOI_LOOKUP_SOURCES.filter(source => source in searchers),
+                sources_used: doiLookupSources.filter(source => source in searchers),
                 source_results: sourceResults,
                 errors,
                 failed_sources: failedSources,
@@ -148,7 +138,7 @@ export async function handleGetPaperByDoi(args, searchers) {
         const result = {
             doi,
             sources_requested: 'all',
-            sources_used: DOI_LOOKUP_SOURCES.filter(source => source in searchers),
+            sources_used: doiLookupSources.filter(source => source in searchers),
             source_results: sourceResults,
             errors,
             failed_sources: failedSources,

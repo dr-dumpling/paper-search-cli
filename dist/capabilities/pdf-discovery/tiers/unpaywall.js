@@ -1,4 +1,4 @@
-import { downloadPdfFromUrl, safeFilename } from '../../../utils/PdfDownload.js';
+import { downloadPdfFromUrl, safeFilename } from '../../../infrastructure/pdf/PdfDownload.js';
 export function createUnpaywallTier() {
     return {
         id: 'unpaywall',

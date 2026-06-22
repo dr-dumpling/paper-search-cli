@@ -21,7 +21,7 @@ import {
 import {
   getGenericSearchToolPlatform,
   isPlatformAlias
-} from './platformMetadata.js';
+} from '../registry/platformMetadata.js';
 
 function jsonTextResponse(text: string) {
   return {

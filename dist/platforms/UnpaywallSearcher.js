@@ -2,7 +2,7 @@ import axios from 'axios';
 import { PaperFactory } from '../models/Paper.js';
 import { PaperSource } from './PaperSource.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
-import { sanitizeDoi } from '../utils/SecurityUtils.js';
+import { sanitizeDoi } from '../infrastructure/security/SecurityUtils.js';
 export class UnpaywallSearcher extends PaperSource {
     client;
     email;

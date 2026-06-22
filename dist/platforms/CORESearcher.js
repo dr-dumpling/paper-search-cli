@@ -2,7 +2,7 @@ import axios from 'axios';
 import { PaperFactory } from '../models/Paper.js';
 import { PaperSource } from './PaperSource.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
-import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
+import { downloadPdfFromUrl, safeFilename } from '../infrastructure/pdf/PdfDownload.js';
 import { PDFExtractor } from '../utils/PDFExtractor.js';
 import { getCoreMaxResultsCap } from '../config/ResultCaps.js';
 export class CORESearcher extends PaperSource {

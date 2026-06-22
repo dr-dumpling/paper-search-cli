@@ -2,7 +2,7 @@
  * 学术论文搜索平台的抽象基类
  * 定义了所有平台搜索器必须实现的核心接口
  */
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 import { logDebug } from '../utils/Logger.js';
 /**
  * 抽象基类：论文搜索平台

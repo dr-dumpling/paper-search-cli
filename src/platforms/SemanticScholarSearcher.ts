@@ -8,13 +8,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
-import { RequestCache } from '../utils/RequestCache.js';
-import { sanitizeDoi } from '../utils/SecurityUtils.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
+import { RequestCache } from '../infrastructure/cache/RequestCache.js';
+import { sanitizeDoi } from '../infrastructure/security/SecurityUtils.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
-import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
+import { downloadPdfFromUrl, safeFilename } from '../infrastructure/pdf/PdfDownload.js';
 
 interface SemanticSearchOptions extends SearchOptions {
   /** 发表年份范围 */

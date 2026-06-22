@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { RequestCache } from '../../src/utils/RequestCache.js';
+import { RequestCache } from '../../src/infrastructure/cache/RequestCache.js';
 
 describe('RequestCache', () => {
   let cache: RequestCache<string>;

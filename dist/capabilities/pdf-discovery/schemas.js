@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isKnownSearchPlatform } from '../../core/platformMetadata.js';
+import { isKnownSearchPlatform } from '../../registry/platformMetadata.js';
 export const DownloadPaperSchema = z
     .object({
     paperId: z.coerce.string().min(1),

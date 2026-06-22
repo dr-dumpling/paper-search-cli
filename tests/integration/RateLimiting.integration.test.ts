@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { RateLimiter } from '../../src/utils/RateLimiter.js';
-import { ErrorHandler } from '../../src/utils/ErrorHandler.js';
+import { RateLimiter } from '../../src/infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../../src/infrastructure/http/ErrorHandler.js';
 
 describe('Rate Limiting Integration Tests', () => {
   beforeEach(() => {

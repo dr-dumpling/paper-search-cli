@@ -5,7 +5,7 @@ import { handleGetPaperCitations, handleGetPaperReferences } from '../capabiliti
 import { handleGenericSearch, handleGetPaperByDoi, handleSearchPapers } from '../capabilities/metadata-search/handler.js';
 import { handleJournalMetrics } from '../capabilities/journal-metrics/handler.js';
 import { handleDownloadPaper, handleDownloadWithFallback } from '../capabilities/pdf-discovery/handler.js';
-import { getGenericSearchToolPlatform, isPlatformAlias } from './platformMetadata.js';
+import { getGenericSearchToolPlatform, isPlatformAlias } from '../registry/platformMetadata.js';
 function jsonTextResponse(text) {
     return {
         content: [

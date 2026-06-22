@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { ErrorHandler } from '../../src/utils/ErrorHandler.js';
+import { ErrorHandler } from '../../src/infrastructure/http/ErrorHandler.js';
 
 describe('ErrorHandler.retryWithBackoff', () => {
   beforeEach(() => {

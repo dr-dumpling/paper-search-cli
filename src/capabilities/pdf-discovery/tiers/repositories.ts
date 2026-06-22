@@ -1,8 +1,7 @@
 import { PaperSource } from '../../../platforms/PaperSource.js';
-import { downloadPdfFromUrl, safeFilename } from '../../../utils/PdfDownload.js';
+import { downloadPdfFromUrl, safeFilename } from '../../../infrastructure/pdf/PdfDownload.js';
+import { getRepositoryFallbackSources } from '../../../registry/platformMetadata.js';
 import type { DownloadTier, DownloadTierContext, DownloadTierResult } from '../DownloadTier.js';
-
-const REPOSITORY_SOURCES = ['pmc', 'europepmc', 'core', 'openaire'];
 
 export function createRepositoryTier(): DownloadTier {
   return {
@@ -18,7 +17,7 @@ async function tryRepositoryFallback(context: DownloadTierContext): Promise<Down
     return { status: 'skipped', message: 'No DOI/title provided for repository discovery.' };
   }
 
-  for (const source of REPOSITORY_SOURCES) {
+  for (const source of getRepositoryFallbackSources()) {
     const searcher = (context.searchers as any)[source] as PaperSource | undefined;
     if (!searcher) continue;
 

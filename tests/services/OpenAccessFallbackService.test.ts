@@ -5,7 +5,7 @@ import {
   INSTITUTIONAL_ACCESS_TIER_ID,
   insertDownloadTierBefore,
   type DownloadTier
-} from '../../src/services/OpenAccessFallbackService.js';
+} from '../../src/capabilities/pdf-discovery/OpenAccessFallbackService.js';
 
 describe('OpenAccessFallbackService', () => {
   it('uses Sci-Hub as the final fallback by default', async () => {
@@ -172,5 +172,35 @@ describe('OpenAccessFallbackService', () => {
       status: 'skipped',
       message: 'Unpaywall searcher unavailable.'
     });
+  });
+
+  it('keeps repository discovery order separate from Unpaywall', async () => {
+    const calls: string[] = [];
+    const repositorySearcher = (source: string) => ({
+      search: jest.fn(async () => {
+        calls.push(source);
+        return [];
+      })
+    });
+    const searchers = {
+      crossref: {
+        getCapabilities: () => ({ download: false }),
+        getPaperByDoi: async () => null
+      },
+      pmc: repositorySearcher('pmc'),
+      europepmc: repositorySearcher('europepmc'),
+      core: repositorySearcher('core'),
+      openaire: repositorySearcher('openaire'),
+      unpaywall: repositorySearcher('unpaywall')
+    } as any;
+
+    await downloadWithFallback(searchers, {
+      source: 'crossref',
+      paperId: 'source-id',
+      title: 'repository discovery title',
+      useSciHub: false
+    });
+
+    expect(calls).toEqual(['pmc', 'europepmc', 'core', 'openaire']);
   });
 });

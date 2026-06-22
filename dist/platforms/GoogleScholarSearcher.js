@@ -8,7 +8,7 @@ import { PaperFactory } from '../models/Paper.js';
 import { PaperSource } from './PaperSource.js';
 import { TIMEOUTS } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 const SCHOLAR_REQUEST_TIMEOUT_MS = 10000;
 export class GoogleScholarSearcher extends PaperSource {
     scholarUrl = 'https://scholar.google.com/scholar';

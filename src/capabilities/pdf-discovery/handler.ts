@@ -1,5 +1,5 @@
 import type { Searchers } from '../../core/searchers.js';
-import { resolvePlatformId } from '../../core/platformMetadata.js';
+import { resolvePlatformId } from '../../registry/platformMetadata.js';
 import { downloadWithFallback } from './OpenAccessFallbackService.js';
 
 function jsonTextResponse(text: string) {

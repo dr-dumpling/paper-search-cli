@@ -30,7 +30,7 @@ import {
   unsetUserConfigValue
 } from './management/config/index.js';
 import type { ConfigKey } from './management/config/index.js';
-import { setupGlobalProxy } from './utils/HttpClient.js';
+import { setupGlobalProxy } from './infrastructure/http/HttpClient.js';
 import {
   defaultSkillTargetIds,
   describeSkillTargets,

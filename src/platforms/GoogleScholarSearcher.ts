@@ -9,7 +9,7 @@ import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
 import { TIMEOUTS } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 
 interface GoogleScholarOptions extends SearchOptions {
   /** 语言设置 */

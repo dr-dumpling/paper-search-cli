@@ -1,5 +1,5 @@
 import { PaperSource } from '../../../platforms/PaperSource.js';
-import { downloadPdfFromUrl, safeFilename } from '../../../utils/PdfDownload.js';
+import { downloadPdfFromUrl, safeFilename } from '../../../infrastructure/pdf/PdfDownload.js';
 import type { DownloadTier, DownloadTierContext, DownloadTierResult } from '../DownloadTier.js';
 
 export function createDirectPdfUrlTier(): DownloadTier {

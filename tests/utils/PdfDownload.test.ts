@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { downloadPdfFromUrl, isPdfBuffer } from '../../src/utils/PdfDownload.js';
+import { downloadPdfFromUrl, isPdfBuffer } from '../../src/infrastructure/pdf/PdfDownload.js';
 
 describe('PdfDownload', () => {
   afterEach(() => {

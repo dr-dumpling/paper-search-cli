@@ -1,14 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  getCapabilityProfileConfigKeysBySource,
+  getCapabilityProfileSources,
   getDefaultAllSources,
+  getDoiLookupSources,
   getGenericPlatformToolDescriptors,
   getGenericSearchToolPlatform,
   getGenericSearchToolNames,
   getPlatformMetadata,
   getPlatformToolDescriptors,
+  getRepositoryFallbackSources,
   isKnownSearchPlatform,
   resolvePlatformId
-} from '../../src/core/platformMetadata.js';
+} from '../../src/registry/platformMetadata.js';
 
 describe('platformMetadata', () => {
   it('resolves platform aliases without adding duplicate platform identities', () => {
@@ -57,6 +61,91 @@ describe('platformMetadata', () => {
       expect.arrayContaining(['wos', 'scholar', 'google_scholar', 'springerlink', 'pubmed_central', 'europe_pmc'])
     );
     expect(getDefaultAllSources()).not.toContain('wiley');
+  });
+
+  it('derives repository fallback sources without changing order or tier boundaries', () => {
+    expect(getRepositoryFallbackSources()).toEqual(['pmc', 'europepmc', 'core', 'openaire']);
+    expect(getRepositoryFallbackSources()).not.toEqual(expect.arrayContaining(['unpaywall', 'wiley', 'scihub']));
+  });
+
+  it('derives DOI lookup sources without silently adding unsupported all-source platforms', () => {
+    expect(getDoiLookupSources()).toEqual([
+      'crossref',
+      'openalex',
+      'unpaywall',
+      'pubmed',
+      'pmc',
+      'europepmc',
+      'core',
+      'webofscience',
+      'arxiv'
+    ]);
+    expect(getDoiLookupSources()).not.toEqual(expect.arrayContaining(['semantic', 'wiley']));
+  });
+
+  it('derives capability profile source groups while preserving virtual source names', () => {
+    expect(getCapabilityProfileSources('metadata_free')).toEqual([
+      'crossref',
+      'openalex',
+      'pubmed',
+      'pmc',
+      'europepmc',
+      'arxiv',
+      'biorxiv',
+      'medrxiv',
+      'semantic',
+      'iacr',
+      'core',
+      'openaire',
+      'googlescholar',
+      'dblp',
+      'acm',
+      'usenix',
+      'openreview'
+    ]);
+    expect(getCapabilityProfileSources('metadata_entitled')).toEqual([
+      'webofscience',
+      'sciencedirect',
+      'springer',
+      'scopus',
+      'ieee'
+    ]);
+    expect(getCapabilityProfileSources('pdf_open_access')).toEqual([
+      'arxiv',
+      'biorxiv',
+      'medrxiv',
+      'pmc',
+      'europepmc',
+      'core',
+      'openaire',
+      'unpaywall',
+      'openalex_oa_metadata',
+      'semantic_open_access_pdf',
+      'springer_open_access',
+      'sciencedirect_open_access',
+      'scopus_open_access_metadata',
+      'iacr'
+    ]);
+    expect(getCapabilityProfileSources('pdf_entitled')).toEqual([
+      'webofscience',
+      'sciencedirect',
+      'scopus',
+      'springer',
+      'ieee',
+      'wiley_tdm'
+    ]);
+    expect(getCapabilityProfileSources('pdf_scihub')).toEqual(['scihub']);
+  });
+
+  it('derives capability profile config keys for entitled sources', () => {
+    expect(getCapabilityProfileConfigKeysBySource(['pdf_entitled'])).toEqual({
+      webofscience: ['WOS_API_KEY'],
+      sciencedirect: ['ELSEVIER_API_KEY'],
+      scopus: ['ELSEVIER_API_KEY'],
+      springer: ['SPRINGER_API_KEY'],
+      ieee: ['IEEE_API_KEY'],
+      wiley_tdm: ['WILEY_TDM_TOKEN']
+    });
   });
 
   it('separates direct platform descriptors from generic descriptors', () => {

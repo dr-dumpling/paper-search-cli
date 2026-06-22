@@ -8,6 +8,12 @@ export type CapabilityGroup =
   | 'journal_metrics'
   | 'pdf_discovery'
   | 'entitled_access';
+export type CapabilityProfileSourceGroup =
+  | 'metadata_free'
+  | 'metadata_entitled'
+  | 'pdf_open_access'
+  | 'pdf_entitled'
+  | 'pdf_scihub';
 export type PlatformSchemaKind =
   | 'generic'
   | 'arxiv'
@@ -46,6 +52,13 @@ export interface PlatformMetadata {
   capabilityGroups?: CapabilityGroup[];
   supportsDoiLookup?: boolean;
   isRepository?: boolean;
+  repositoryFallbackOrder?: number;
+  doiLookupOrder?: number;
+  capabilityProfileSources?: {
+    group: CapabilityProfileSourceGroup;
+    order: number;
+    source?: string;
+  }[];
   description?: string;
 }
 
@@ -58,6 +71,8 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults', 'year', 'author', 'sortBy', 'sortOrder'],
     schemaKind: 'crossref',
     supportsDoiLookup: true,
+    doiLookupOrder: 10,
+    capabilityProfileSources: [{ group: 'metadata_free', order: 10 }],
     capabilityGroups: ['metadata_search']
   },
   {
@@ -68,6 +83,8 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults', 'year'],
     schemaKind: 'openalex',
     supportsDoiLookup: true,
+    doiLookupOrder: 20,
+    capabilityProfileSources: [{ group: 'metadata_free', order: 20 }],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -79,6 +96,8 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy'],
     schemaKind: 'pubmed',
     supportsDoiLookup: true,
+    doiLookupOrder: 40,
+    capabilityProfileSources: [{ group: 'metadata_free', order: 30 }],
     capabilityGroups: ['metadata_search']
   },
   {
@@ -91,6 +110,12 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     schemaKind: 'pmc-style',
     supportsDoiLookup: true,
     isRepository: true,
+    repositoryFallbackOrder: 10,
+    doiLookupOrder: 50,
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 40 },
+      { group: 'pdf_open_access', order: 40 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -103,6 +128,12 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     schemaKind: 'pmc-style',
     supportsDoiLookup: true,
     isRepository: true,
+    repositoryFallbackOrder: 20,
+    doiLookupOrder: 60,
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 50 },
+      { group: 'pdf_open_access', order: 50 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -112,6 +143,11 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     defaultInAll: true,
     supportedOptions: ['maxResults', 'year', 'author', 'category', 'sortBy', 'sortOrder'],
     schemaKind: 'arxiv',
+    doiLookupOrder: 90,
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 60 },
+      { group: 'pdf_open_access', order: 10 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -121,6 +157,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     defaultInAll: true,
     supportedOptions: ['maxResults', 'days', 'category'],
     schemaKind: 'biorxiv',
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 70 },
+      { group: 'pdf_open_access', order: 20 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -130,6 +170,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     defaultInAll: true,
     supportedOptions: ['maxResults', 'days', 'category'],
     schemaKind: 'medrxiv',
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 80 },
+      { group: 'pdf_open_access', order: 30 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -141,6 +185,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults', 'year', 'fieldsOfStudy', 'sortBy'],
     schemaKind: 'semantic-scholar',
     supportsDoiLookup: true,
+    capabilityProfileSources: [{ group: 'metadata_free', order: 90 }],
     capabilityGroups: ['metadata_search', 'citation_expansion', 'body_snippet_search', 'pdf_discovery']
   },
   {
@@ -150,6 +195,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     defaultInAll: true,
     supportedOptions: ['maxResults', 'fetchDetails'],
     schemaKind: 'iacr',
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 100 },
+      { group: 'pdf_open_access', order: 140 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -161,6 +210,12 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults', 'year'],
     schemaKind: 'core',
     isRepository: true,
+    repositoryFallbackOrder: 30,
+    doiLookupOrder: 70,
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 110 },
+      { group: 'pdf_open_access', order: 60 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -172,6 +227,11 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults', 'year'],
     schemaKind: 'pmc-style',
     isRepository: true,
+    repositoryFallbackOrder: 40,
+    capabilityProfileSources: [
+      { group: 'metadata_free', order: 120 },
+      { group: 'pdf_open_access', order: 70 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -182,6 +242,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     defaultInAll: true,
     supportedOptions: ['maxResults', 'year', 'author'],
     schemaKind: 'google-scholar',
+    capabilityProfileSources: [{ group: 'metadata_free', order: 130 }],
     capabilityGroups: ['metadata_search']
   },
   {
@@ -194,6 +255,11 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     optionalConfigKeys: [['WOS_API_VERSION']],
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder'],
     schemaKind: 'webofscience',
+    doiLookupOrder: 80,
+    capabilityProfileSources: [
+      { group: 'metadata_entitled', order: 10 },
+      { group: 'pdf_entitled', order: 10 }
+    ],
     capabilityGroups: ['metadata_search', 'entitled_access']
   },
   {
@@ -204,6 +270,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     configKeys: [['ELSEVIER_API_KEY']],
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'openAccess'],
     schemaKind: 'sciencedirect',
+    capabilityProfileSources: [
+      { group: 'metadata_entitled', order: 20 },
+      { group: 'pdf_entitled', order: 20 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
   },
   {
@@ -216,6 +286,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     optionalConfigKeys: [['SPRINGER_OPENACCESS_API_KEY']],
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'openAccess', 'subject', 'type'],
     schemaKind: 'springer',
+    capabilityProfileSources: [
+      { group: 'metadata_entitled', order: 30 },
+      { group: 'pdf_entitled', order: 40 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
   },
   {
@@ -227,6 +301,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     optionalConfigKeys: [['SCOPUS_SEARCH_API_KEY']],
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'affiliation', 'subject', 'openAccess', 'documentType'],
     schemaKind: 'scopus',
+    capabilityProfileSources: [
+      { group: 'metadata_entitled', order: 40 },
+      { group: 'pdf_entitled', order: 30 }
+    ],
     capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
   },
   {
@@ -240,6 +318,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     capabilityGroups: ['pdf_discovery', 'entitled_access'],
     supportsDoiLookup: false,
     isRepository: false,
+    capabilityProfileSources: [{ group: 'pdf_entitled', source: 'wiley_tdm', order: 60 }],
     description:
       'Wiley TDM API supports DOI-targeted PDF download only; use Crossref/OpenAlex for metadata discovery.'
   },
@@ -250,6 +329,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     defaultInAll: true,
     supportedOptions: ['maxResults'],
     schemaKind: 'scihub',
+    capabilityProfileSources: [{ group: 'pdf_scihub', order: 10 }],
     capabilityGroups: ['pdf_discovery']
   },
   {
@@ -261,6 +341,8 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     supportedOptions: ['maxResults'],
     schemaKind: 'unpaywall',
     isRepository: true,
+    doiLookupOrder: 30,
+    capabilityProfileSources: [{ group: 'pdf_open_access', order: 80 }],
     capabilityGroups: ['metadata_search', 'pdf_discovery']
   },
   {
@@ -272,6 +354,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     toolName: 'search_dblp',
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder'],
     schemaKind: 'generic',
+    capabilityProfileSources: [{ group: 'metadata_free', order: 140 }],
     capabilityGroups: ['metadata_search'],
     description: 'Search DBLP computer-science bibliography using the official public search API'
   },
@@ -285,6 +368,10 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     configKeys: [['IEEE_API_KEY']],
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder', 'articleTitle', 'startRecord'],
     schemaKind: 'generic',
+    capabilityProfileSources: [
+      { group: 'metadata_entitled', order: 50 },
+      { group: 'pdf_entitled', order: 50 }
+    ],
     capabilityGroups: ['metadata_search', 'entitled_access'],
     description: 'Search IEEE Xplore metadata using the official API. Requires IEEE_API_KEY.'
   },
@@ -297,6 +384,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     toolName: 'search_acm',
     supportedOptions: ['maxResults', 'year', 'author', 'sortBy', 'sortOrder'],
     schemaKind: 'generic',
+    capabilityProfileSources: [{ group: 'metadata_free', order: 150 }],
     capabilityGroups: ['metadata_search'],
     description: 'Search ACM metadata through Crossref/OpenAlex-style metadata, constrained to ACM DOI records'
   },
@@ -309,6 +397,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     toolName: 'search_usenix',
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'sortBy', 'sortOrder'],
     schemaKind: 'generic',
+    capabilityProfileSources: [{ group: 'metadata_free', order: 160 }],
     capabilityGroups: ['metadata_search'],
     description: 'Search USENIX-related paper metadata through DBLP-backed discovery'
   },
@@ -321,6 +410,7 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     toolName: 'search_openreview',
     supportedOptions: ['maxResults', 'year', 'author', 'journal', 'venue'],
     schemaKind: 'generic',
+    capabilityProfileSources: [{ group: 'metadata_free', order: 170 }],
     capabilityGroups: ['metadata_search'],
     description: 'Search public OpenReview notes using OpenReview APIs'
   }
@@ -334,6 +424,18 @@ export const SEARCH_PLATFORM_VALUES = PLATFORM_METADATA.flatMap(platform => [
 export const DEFAULT_ALL_SOURCES = PLATFORM_METADATA
   .filter(platform => platform.defaultInAll)
   .map(platform => platform.id);
+
+const VIRTUAL_CAPABILITY_PROFILE_SOURCES: {
+  group: CapabilityProfileSourceGroup;
+  source: string;
+  order: number;
+}[] = [
+  { group: 'pdf_open_access', source: 'openalex_oa_metadata', order: 90 },
+  { group: 'pdf_open_access', source: 'semantic_open_access_pdf', order: 100 },
+  { group: 'pdf_open_access', source: 'springer_open_access', order: 110 },
+  { group: 'pdf_open_access', source: 'sciencedirect_open_access', order: 120 },
+  { group: 'pdf_open_access', source: 'scopus_open_access_metadata', order: 130 }
+];
 
 const ALIAS_TO_CANONICAL = new Map<string, string>();
 const METADATA_BY_ID = new Map<string, PlatformMetadata>();
@@ -368,6 +470,57 @@ export function getPlatformMetadata(platform: string): PlatformMetadata | undefi
 
 export function getDefaultAllSources(): string[] {
   return [...DEFAULT_ALL_SOURCES];
+}
+
+export function getRepositoryFallbackSources(): string[] {
+  return PLATFORM_METADATA
+    .filter(platform => typeof platform.repositoryFallbackOrder === 'number')
+    .sort((a, b) => a.repositoryFallbackOrder! - b.repositoryFallbackOrder!)
+    .map(platform => platform.id);
+}
+
+export function getDoiLookupSources(): string[] {
+  return PLATFORM_METADATA
+    .filter(platform => typeof platform.doiLookupOrder === 'number')
+    .sort((a, b) => a.doiLookupOrder! - b.doiLookupOrder!)
+    .map(platform => platform.id);
+}
+
+export function getCapabilityProfileSources(group: CapabilityProfileSourceGroup): string[] {
+  return [
+    ...PLATFORM_METADATA.flatMap(platform =>
+      (platform.capabilityProfileSources || []).map(source => ({
+        group: source.group,
+        source: source.source || platform.id,
+        order: source.order
+      }))
+    ),
+    ...VIRTUAL_CAPABILITY_PROFILE_SOURCES
+  ]
+    .filter(source => source.group === group)
+    .sort((a, b) => a.order - b.order)
+    .map(source => source.source);
+}
+
+export function getCapabilityProfileConfigKeysBySource(
+  groups: CapabilityProfileSourceGroup[]
+): Record<string, string[]> {
+  const keysBySource = new Map<string, string[]>();
+  for (const platform of PLATFORM_METADATA) {
+    for (const source of platform.capabilityProfileSources || []) {
+      const keys = (platform.configKeys || []).flat();
+      if (keys.length > 0) {
+        keysBySource.set(source.source || platform.id, keys);
+      }
+    }
+  }
+
+  const orderedSources = groups.flatMap(group => getCapabilityProfileSources(group));
+  return Object.fromEntries(
+    [...new Set(orderedSources)]
+      .filter(source => keysBySource.has(source))
+      .map(source => [source, keysBySource.get(source)!])
+  );
 }
 
 export function getAliasMap(): Record<string, string> {

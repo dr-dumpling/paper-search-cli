@@ -1,7 +1,7 @@
 import { TIMEOUTS } from '../../config/constants.js';
 import { PaperFactory } from '../../models/Paper.js';
-import { withTimeout } from '../../utils/SecurityUtils.js';
-import { getAliasMap, getDefaultAllSources, resolvePlatformId } from '../../core/platformMetadata.js';
+import { withTimeout } from '../../infrastructure/security/SecurityUtils.js';
+import { getAliasMap, getDefaultAllSources, resolvePlatformId } from '../../registry/platformMetadata.js';
 const ALIASES = getAliasMap();
 export function parseSourceList(sources, searchers) {
     const requested = !sources || sources.trim() === '' ? 'crossref' : sources.trim();

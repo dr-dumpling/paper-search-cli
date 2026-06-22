@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { handleToolCall, TOOL_HANDLER_NAMES } from '../../src/core/handleToolCall.js';
-import { getGenericSearchToolPlatform } from '../../src/core/platformMetadata.js';
+import { getGenericSearchToolPlatform } from '../../src/registry/platformMetadata.js';
 import { TOOLS } from '../../src/core/tools.js';
 import { PaperFactory } from '../../src/models/Paper.js';
-import CitationService from '../../src/services/CitationService.js';
+import CitationService from '../../src/capabilities/citation-expansion/CitationService.js';
 
 function responseData(response: any): any {
   const text = response.content[0].text;
@@ -197,6 +197,52 @@ describe('handleToolCall', () => {
   });
 
   describe('get_paper_by_doi all', () => {
+    it('keeps DOI all-source lookup order derived from registry without adding semantic or Wiley', async () => {
+      const calls: string[] = [];
+      const lookupSource = (source: string) => ({
+        getPaperByDoi: async () => {
+          calls.push(source);
+          return null;
+        }
+      });
+      const searchers = Object.fromEntries(
+        [
+          'crossref',
+          'openalex',
+          'unpaywall',
+          'pubmed',
+          'pmc',
+          'europepmc',
+          'core',
+          'webofscience',
+          'arxiv',
+          'semantic',
+          'wiley'
+        ].map(source => [source, lookupSource(source)])
+      ) as any;
+
+      const response = await handleToolCall(
+        'get_paper_by_doi',
+        { doi: '10.1000/example', platform: 'all' },
+        searchers
+      );
+      const data = responseData(response);
+
+      expect(data.sources_used).toEqual([
+        'crossref',
+        'openalex',
+        'unpaywall',
+        'pubmed',
+        'pmc',
+        'europepmc',
+        'core',
+        'webofscience',
+        'arxiv'
+      ]);
+      expect(calls).toEqual(data.sources_used);
+      expect(data.sources_used).not.toEqual(expect.arrayContaining(['semantic', 'wiley']));
+    });
+
     it('skips failed sources and reports warnings without failing the whole lookup', async () => {
       const matchingPaper = PaperFactory.create({
         paperId: '10.1000/example',

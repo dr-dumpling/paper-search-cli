@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { queryJournalMetrics } from '../../src/services/JournalMetricsService.js';
+import { queryJournalMetrics } from '../../src/capabilities/journal-metrics/JournalMetricsService.js';
 
 const ORIGINAL_ENV = { ...process.env };
 

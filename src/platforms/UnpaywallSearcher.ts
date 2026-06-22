@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
-import { sanitizeDoi } from '../utils/SecurityUtils.js';
+import { sanitizeDoi } from '../infrastructure/security/SecurityUtils.js';
 
 interface UnpaywallAuthor {
   given?: string;

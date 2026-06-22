@@ -4,7 +4,7 @@ import {
   dedupePapers,
   parseSourceList,
   searchMultipleSources
-} from '../../src/services/MultiSourceSearchService.js';
+} from '../../src/capabilities/metadata-search/MultiSourceSearchService.js';
 
 const searchers = {
   crossref: {},

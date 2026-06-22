@@ -10,7 +10,7 @@ import { handleToolCall } from './core/handleToolCall.js';
 import { diagnoseError, diagnoseToolResult, diagnosticContextFromCli, getRequirementStatus } from './management/diagnostics/index.js';
 import { buildCapabilityProfile } from './management/capability-profile/index.js';
 import { CONFIG_KEYS, getConfigPath, importEnvFile, initUserConfig, listConfigEntries, loadUserConfigIntoEnv, maskValue, readUserConfig, assertConfigKey, setUserConfigValue, unsetUserConfigValue } from './management/config/index.js';
-import { setupGlobalProxy } from './utils/HttpClient.js';
+import { setupGlobalProxy } from './infrastructure/http/HttpClient.js';
 import { defaultSkillTargetIds, describeSkillTargets, diffSkillTargets, installSkillTargets, parseSkillTargets, statusSkillTargets } from './management/skills/index.js';
 import { renderDoctorTextReport, renderSkillDiffTextReport } from './management/reports/index.js';
 import { runLiveSmoke } from './management/smoke/index.js';

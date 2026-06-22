@@ -1,5 +1,5 @@
-import { PLATFORM_FACTORIES } from './platformFactories.js';
-import { PLATFORM_METADATA } from './platformMetadata.js';
+import { PLATFORM_FACTORIES } from '../registry/platformFactories.js';
+import { PLATFORM_METADATA } from '../registry/platformMetadata.js';
 import { logDebug } from '../utils/Logger.js';
 let searchers = null;
 export function initializeSearchers() {

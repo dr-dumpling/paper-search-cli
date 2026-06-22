@@ -6,9 +6,9 @@
 import axios, { AxiosResponse } from 'axios';
 import { Paper, PaperFactory } from '../models/Paper.js';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
-import { escapeQueryValue, validateQueryComplexity, withTimeout } from '../utils/SecurityUtils.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { escapeQueryValue, validateQueryComplexity, withTimeout } from '../infrastructure/security/SecurityUtils.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 import { QuotaManager } from '../utils/QuotaManager.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug, logWarn } from '../utils/Logger.js';

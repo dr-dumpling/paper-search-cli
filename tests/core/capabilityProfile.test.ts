@@ -3,7 +3,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import { setUserConfigValue } from '../../src/config/ConfigService.js';
-import { buildCapabilityProfile } from '../../src/core/capabilityProfile.js';
+import { buildCapabilityProfile } from '../../src/management/capability-profile/index.js';
 
 const CONFIG_ENV_KEYS = [
   'PAPER_SEARCH_CONFIG_FILE',
@@ -49,6 +49,39 @@ describe('capabilityProfile', () => {
     expect(byId.metadata_search.status).toBe('available');
     expect(byId.metadata_search.configured).not.toContain('scihub');
     expect(byId.metadata_search.reason).toContain('Sci-Hub is excluded');
+    expect(byId.metadata_search.sourceGroups?.free_sources).toEqual([
+      'crossref',
+      'openalex',
+      'pubmed',
+      'pmc',
+      'europepmc',
+      'arxiv',
+      'biorxiv',
+      'medrxiv',
+      'semantic',
+      'iacr',
+      'core',
+      'openaire',
+      'googlescholar',
+      'dblp',
+      'acm',
+      'usenix',
+      'openreview'
+    ]);
+    expect(byId.metadata_search.sourceGroups?.missing_entitled_sources).toEqual([
+      'webofscience',
+      'sciencedirect',
+      'springer',
+      'scopus',
+      'ieee'
+    ]);
+    expect(byId.metadata_search.optionalKeys).toEqual([
+      'WOS_API_KEY',
+      'ELSEVIER_API_KEY',
+      'SPRINGER_API_KEY',
+      'IEEE_API_KEY',
+      'WILEY_TDM_TOKEN'
+    ]);
     expect(byId.citation_expansion.status).toBe('available');
     expect(byId.citation_expansion.configured).toEqual(['semantic_scholar_graph']);
     expect(byId.citation_expansion.optionalKeys).toEqual(['SEMANTIC_SCHOLAR_API_KEY']);
@@ -57,9 +90,39 @@ describe('capabilityProfile', () => {
     expect(byId.journal_metrics.status).toBe('unavailable');
     expect(byId.journal_metrics.requiredKeys).toEqual(['EASYSCHOLAR_KEY']);
     expect(byId.pdf_discovery.status).toBe('degraded');
-    expect(byId.pdf_discovery.sourceGroups?.open_access_sources).toContain('unpaywall');
+    expect(byId.pdf_discovery.sourceGroups?.open_access_sources).toEqual([
+      'arxiv',
+      'biorxiv',
+      'medrxiv',
+      'pmc',
+      'europepmc',
+      'core',
+      'openaire',
+      'unpaywall',
+      'openalex_oa_metadata',
+      'semantic_open_access_pdf',
+      'springer_open_access',
+      'sciencedirect_open_access',
+      'scopus_open_access_metadata',
+      'iacr'
+    ]);
     expect(byId.pdf_discovery.sourceGroups?.entitled_access_sources).toEqual([]);
+    expect(byId.pdf_discovery.sourceGroups?.missing_entitled_access_sources).toEqual([
+      'webofscience',
+      'sciencedirect',
+      'scopus',
+      'springer',
+      'ieee',
+      'wiley_tdm'
+    ]);
     expect(byId.pdf_discovery.sourceGroups?.scihub_sources).toEqual(['scihub']);
+    expect(byId.pdf_discovery.optionalKeys).toEqual([
+      'WOS_API_KEY',
+      'ELSEVIER_API_KEY',
+      'SPRINGER_API_KEY',
+      'IEEE_API_KEY',
+      'WILEY_TDM_TOKEN'
+    ]);
     expect(byId.entitled_access.status).toBe('unavailable');
     for (const entry of profile.entries) {
       expect(entry.reason.length).toBeGreaterThan(0);

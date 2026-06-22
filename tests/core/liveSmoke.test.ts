@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { summarizeLiveSmoke, type SmokeCase } from '../../src/core/liveSmoke.js';
-import type { CapabilityProfile } from '../../src/core/capabilityProfile.js';
+import type { CapabilityProfile } from '../../src/management/capability-profile/index.js';
 
 const capabilityProfile: CapabilityProfile = {
   ok: true,

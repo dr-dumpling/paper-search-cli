@@ -2,7 +2,7 @@ import axios from 'axios';
 import { PaperFactory } from '../models/Paper.js';
 import { PaperSource } from './PaperSource.js';
 import { DEFAULT_MAILTO, TIMEOUTS, USER_AGENT } from '../config/constants.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 export class ACMSearcher extends PaperSource {
     client;
     mailto;

@@ -14,8 +14,8 @@
 import axios from 'axios';
 import { PaperSource } from './PaperSource.js';
 import { PaperFactory } from '../models/Paper.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 import { QuotaManager } from '../utils/QuotaManager.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';

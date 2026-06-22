@@ -11,7 +11,7 @@ import {
   withTimeout,
   sanitizeRequest,
   maskSensitiveData
-} from '../../src/utils/SecurityUtils.js';
+} from '../../src/infrastructure/security/SecurityUtils.js';
 
 describe('SecurityUtils', () => {
   describe('sanitizeDoi', () => {

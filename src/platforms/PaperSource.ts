@@ -4,8 +4,8 @@
  */
 
 import { Paper } from '../models/Paper.js';
-import { sanitizeRequest, maskSensitiveData } from '../utils/SecurityUtils.js';
-import { ErrorHandler, ApiError } from '../utils/ErrorHandler.js';
+import { sanitizeRequest, maskSensitiveData } from '../infrastructure/security/SecurityUtils.js';
+import { ErrorHandler, ApiError } from '../infrastructure/http/ErrorHandler.js';
 import { logDebug } from '../utils/Logger.js';
 
 export interface SearchOptions {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { HARD_CORE_MAX_RESULTS_CAP, getCoreMaxResultsCap } from '../../config/ResultCaps.js';
-import { isKnownSearchPlatform } from '../../core/platformMetadata.js';
+import { isKnownSearchPlatform } from '../../registry/platformMetadata.js';
 
 const SortBySchema = z.enum(['relevance', 'date', 'citations']);
 const SortOrderSchema = z.enum(['asc', 'desc']);

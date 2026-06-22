@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getGenericSearchToolPlatform } from './platformMetadata.js';
+import { getGenericSearchToolPlatform } from '../registry/platformMetadata.js';
 import { HARD_CORE_MAX_RESULTS_CAP, getCoreMaxResultsCap } from '../config/ResultCaps.js';
 import { SearchSemanticSnippetsSchema } from '../capabilities/body-snippet-search/schemas.js';
 import { CitationLookupSchema } from '../capabilities/citation-expansion/schemas.js';

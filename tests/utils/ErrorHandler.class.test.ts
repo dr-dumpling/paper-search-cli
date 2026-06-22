@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { ErrorHandler, ApiError, HTTP_ERROR_CODES } from '../../src/utils/ErrorHandler.js';
+import { ErrorHandler, ApiError, HTTP_ERROR_CODES } from '../../src/infrastructure/http/ErrorHandler.js';
 
 describe('ErrorHandler', () => {
   let errorHandler: ErrorHandler;

@@ -13,8 +13,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { PaperSource, SearchOptions, DownloadOptions, PlatformCapabilities } from './PaperSource.js';
 import { Paper, PaperFactory } from '../models/Paper.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { RateLimiter } from '../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../infrastructure/http/ErrorHandler.js';
 import { QuotaManager } from '../utils/QuotaManager.js';
 import { logDebug } from '../utils/Logger.js';
 import { TIMEOUTS, USER_AGENT } from '../config/constants.js';

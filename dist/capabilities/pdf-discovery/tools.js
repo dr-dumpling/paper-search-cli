@@ -1,4 +1,4 @@
-import { SEARCH_PLATFORM_VALUES } from '../../core/platformMetadata.js';
+import { SEARCH_PLATFORM_VALUES } from '../../registry/platformMetadata.js';
 export const DOWNLOAD_PAPER_TOOL = {
     name: 'download_paper',
     description: 'Download PDF file of an academic paper. Native downloads are tried first; unsupported or failed native downloads use the fallback funnel ending with Sci-Hub.',

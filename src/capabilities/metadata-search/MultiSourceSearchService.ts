@@ -2,8 +2,8 @@ import type { Searchers } from '../../core/searchers.js';
 import { TIMEOUTS } from '../../config/constants.js';
 import { Paper, PaperFactory } from '../../models/Paper.js';
 import { PaperSource, SearchOptions } from '../../platforms/PaperSource.js';
-import { withTimeout } from '../../utils/SecurityUtils.js';
-import { getAliasMap, getDefaultAllSources, resolvePlatformId } from '../../core/platformMetadata.js';
+import { withTimeout } from '../../infrastructure/security/SecurityUtils.js';
+import { getAliasMap, getDefaultAllSources, resolvePlatformId } from '../../registry/platformMetadata.js';
 import type { MultiSourceSearchResult } from './types.js';
 
 export type { MultiSourceSearchResult } from './types.js';

@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { RequestCache } from '../../utils/RequestCache.js';
-import { RateLimiter } from '../../utils/RateLimiter.js';
-import { ErrorHandler } from '../../utils/ErrorHandler.js';
+import { RequestCache } from '../../infrastructure/cache/RequestCache.js';
+import { RateLimiter } from '../../infrastructure/rate-limit/RateLimiter.js';
+import { ErrorHandler } from '../../infrastructure/http/ErrorHandler.js';
 import { TIMEOUTS, USER_AGENT } from '../../config/constants.js';
 import { logDebug, logWarn } from '../../utils/Logger.js';
 export class CitationService {

@@ -3,24 +3,13 @@ import { TIMEOUTS } from '../../config/constants.js';
 import { PaperFactory, type Paper } from '../../models/Paper.js';
 import { PaperSource, type SearchOptions } from '../../platforms/PaperSource.js';
 import { logDebug } from '../../utils/Logger.js';
-import { withTimeout } from '../../utils/SecurityUtils.js';
+import { withTimeout } from '../../infrastructure/security/SecurityUtils.js';
 import {
+  getDoiLookupSources,
   getPlatformMetadata,
   resolvePlatformId
-} from '../../core/platformMetadata.js';
+} from '../../registry/platformMetadata.js';
 import { searchMultipleSources } from './MultiSourceSearchService.js';
-
-const DOI_LOOKUP_SOURCES = [
-  'crossref',
-  'openalex',
-  'unpaywall',
-  'pubmed',
-  'pmc',
-  'europepmc',
-  'core',
-  'webofscience',
-  'arxiv'
-] as const;
 
 function jsonTextResponse(text: string) {
   return {
@@ -121,9 +110,10 @@ export async function handleGetPaperByDoi(args: { doi: string; platform: string 
   const sourceResults: Record<string, number> = {};
   const errors: Record<string, string> = {};
   const failedSources: string[] = [];
+  const doiLookupSources = getDoiLookupSources();
 
   if (platform === 'all') {
-    const selected = DOI_LOOKUP_SOURCES.filter(source => source in searchers);
+    const selected = doiLookupSources.filter(source => source in searchers);
     const settled = await Promise.allSettled(
       selected.map(async source => {
         const searcher = (searchers as any)[source] as PaperSource;
@@ -180,7 +170,7 @@ export async function handleGetPaperByDoi(args: { doi: string; platform: string 
       const result = {
         doi,
         sources_requested: 'all',
-        sources_used: DOI_LOOKUP_SOURCES.filter(source => source in searchers),
+        sources_used: doiLookupSources.filter(source => source in searchers),
         source_results: sourceResults,
         errors,
         failed_sources: failedSources,
@@ -196,7 +186,7 @@ export async function handleGetPaperByDoi(args: { doi: string; platform: string 
     const result = {
       doi,
       sources_requested: 'all',
-      sources_used: DOI_LOOKUP_SOURCES.filter(source => source in searchers),
+      sources_used: doiLookupSources.filter(source => source in searchers),
       source_results: sourceResults,
       errors,
       failed_sources: failedSources,

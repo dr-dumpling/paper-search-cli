@@ -1,16 +1,12 @@
-import type { ACMSearcher } from '../platforms/ACMSearcher.js';
 import type { ArxivSearcher } from '../platforms/ArxivSearcher.js';
 import type { BioRxivSearcher, MedRxivSearcher } from '../platforms/BioRxivSearcher.js';
 import type { CORESearcher } from '../platforms/CORESearcher.js';
 import type { CrossrefSearcher } from '../platforms/CrossrefSearcher.js';
-import type { DBLPSearcher } from '../platforms/DBLPSearcher.js';
 import type { EuropePMCSearcher } from '../platforms/EuropePMCSearcher.js';
 import type { GoogleScholarSearcher } from '../platforms/GoogleScholarSearcher.js';
 import type { IACRSearcher } from '../platforms/IACRSearcher.js';
-import type { IEEESearcher } from '../platforms/IEEESearcher.js';
 import type { OpenAIRESearcher } from '../platforms/OpenAIRESearcher.js';
 import type { OpenAlexSearcher } from '../platforms/OpenAlexSearcher.js';
-import type { OpenReviewSearcher } from '../platforms/OpenReviewSearcher.js';
 import type { PaperSource } from '../platforms/PaperSource.js';
 import type { PMCSearcher } from '../platforms/PMCSearcher.js';
 import type { PubMedSearcher } from '../platforms/PubMedSearcher.js';
@@ -20,24 +16,23 @@ import type { ScopusSearcher } from '../platforms/ScopusSearcher.js';
 import type { SemanticScholarSearcher } from '../platforms/SemanticScholarSearcher.js';
 import type { SpringerSearcher } from '../platforms/SpringerSearcher.js';
 import type { UnpaywallSearcher } from '../platforms/UnpaywallSearcher.js';
-import type { USENIXSearcher } from '../platforms/USENIXSearcher.js';
 import type { WebOfScienceSearcher } from '../platforms/WebOfScienceSearcher.js';
 import type { WileySearcher } from '../platforms/WileySearcher.js';
-import { PLATFORM_FACTORIES } from './platformFactories.js';
-import { PLATFORM_METADATA } from './platformMetadata.js';
+import { PLATFORM_FACTORIES } from '../registry/platformFactories.js';
+import { PLATFORM_METADATA } from '../registry/platformMetadata.js';
 import { logDebug } from '../utils/Logger.js';
 
-export interface Searchers {
+export type SearcherMap = Record<string, PaperSource>;
+
+export interface Searchers extends SearcherMap {
   arxiv: ArxivSearcher;
   webofscience: WebOfScienceSearcher;
   pubmed: PubMedSearcher;
-  wos: WebOfScienceSearcher;
   biorxiv: BioRxivSearcher;
   medrxiv: MedRxivSearcher;
   semantic: SemanticScholarSearcher;
   iacr: IACRSearcher;
   googlescholar: GoogleScholarSearcher;
-  scholar: GoogleScholarSearcher;
   scihub: SciHubSearcher;
   sciencedirect: ScienceDirectSearcher;
   springer: SpringerSearcher;
@@ -50,12 +45,6 @@ export interface Searchers {
   europepmc: EuropePMCSearcher;
   core: CORESearcher;
   openaire: OpenAIRESearcher;
-  dblp: DBLPSearcher;
-  ieee: IEEESearcher;
-  acm: ACMSearcher;
-  usenix: USENIXSearcher;
-  openreview: OpenReviewSearcher;
-  springerlink: SpringerSearcher;
 }
 
 let searchers: Searchers | null = null;

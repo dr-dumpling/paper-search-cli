@@ -1,5 +1,5 @@
-import { downloadPdfFromUrl, safeFilename } from '../../../utils/PdfDownload.js';
-const REPOSITORY_SOURCES = ['pmc', 'europepmc', 'core', 'openaire'];
+import { downloadPdfFromUrl, safeFilename } from '../../../infrastructure/pdf/PdfDownload.js';
+import { getRepositoryFallbackSources } from '../../../registry/platformMetadata.js';
 export function createRepositoryTier() {
     return {
         id: 'repositories',
@@ -12,7 +12,7 @@ async function tryRepositoryFallback(context) {
     if (queries.length === 0) {
         return { status: 'skipped', message: 'No DOI/title provided for repository discovery.' };
     }
-    for (const source of REPOSITORY_SOURCES) {
+    for (const source of getRepositoryFallbackSources()) {
         const searcher = context.searchers[source];
         if (!searcher)
             continue;
