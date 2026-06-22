@@ -230,6 +230,20 @@ export const PLATFORM_METADATA: PlatformMetadata[] = [
     capabilityGroups: ['metadata_search', 'pdf_discovery', 'entitled_access']
   },
   {
+    id: 'wiley',
+    displayName: 'Wiley TDM',
+    sourceKind: 'official-api',
+    defaultInAll: false,
+    configKeys: [['WILEY_TDM_TOKEN']],
+    supportedOptions: [],
+    schemaKind: 'wiley-deprecated',
+    capabilityGroups: ['pdf_discovery', 'entitled_access'],
+    supportsDoiLookup: false,
+    isRepository: false,
+    description:
+      'Wiley TDM API supports DOI-targeted PDF download only; use Crossref/OpenAlex for metadata discovery.'
+  },
+  {
     id: 'scihub',
     displayName: 'Sci-Hub',
     sourceKind: 'html',

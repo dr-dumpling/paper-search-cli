@@ -35,6 +35,63 @@ describe('handleToolCall', () => {
   });
 
   describe('download_paper fallback', () => {
+    it('routes Wiley downloads to the native Wiley TDM downloader when present', async () => {
+      const downloadPdf = jest.fn(async () => '/tmp/wiley.pdf');
+      const searchers = {
+        wiley: {
+          getCapabilities: () => ({ download: true }),
+          downloadPdf
+        },
+        scihub: {
+          downloadPdf: jest.fn()
+        }
+      } as any;
+
+      const response = await handleToolCall(
+        'download_paper',
+        { paperId: '10.1002/example', platform: 'wiley', savePath: './downloads' },
+        searchers
+      );
+
+      expect(response.content[0].text).toContain('PDF downloaded successfully to: /tmp/wiley.pdf');
+      expect(downloadPdf).toHaveBeenCalledWith('10.1002/example', { savePath: './downloads' });
+      expect(searchers.scihub.downloadPdf).not.toHaveBeenCalled();
+    });
+
+    it('keeps Wiley primary failures out of the unsupported-platform path', async () => {
+      const downloadPdf = jest.fn(async () => {
+        throw new Error('Wiley TDM token is required. Set WILEY_TDM_TOKEN environment variable.');
+      });
+      const searchers = {
+        wiley: {
+          getCapabilities: () => ({ download: true }),
+          downloadPdf
+        },
+        scihub: {
+          downloadPdf: async () => '/tmp/fallback.pdf'
+        }
+      } as any;
+
+      const response = await handleToolCall(
+        'download_paper',
+        { paperId: '10.1002/example', platform: 'wiley', savePath: './downloads' },
+        searchers
+      );
+      const text = response.content[0].text;
+      const data = responseData(response);
+
+      expect(text).not.toContain('Unsupported platform for download: wiley');
+      expect(text).toContain('Primary download failed; PDF downloaded successfully via fallback');
+      expect(downloadPdf).toHaveBeenCalledWith('10.1002/example', { savePath: './downloads' });
+      expect(data.attempts).toContainEqual(
+        expect.objectContaining({
+          stage: 'primary',
+          status: 'error',
+          message: expect.stringContaining('Wiley TDM token is required')
+        })
+      );
+    });
+
     it('routes unsupported platform downloads through the fallback funnel including Sci-Hub', async () => {
       const searchers = {
         crossref: {

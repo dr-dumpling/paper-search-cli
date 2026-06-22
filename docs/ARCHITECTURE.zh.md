@@ -1,4 +1,4 @@
-# paper-search-cli 当前架构（v0.3.1）
+# paper-search-cli 当前架构（v0.3.3）
 
 本文是 `paper-search-cli` 当前架构事实源，描述当前代码已经实现的能力、边界和仍存在的技术债。后续演进方向见 [`ROADMAP.zh.md`](./ROADMAP.zh.md)。
 
@@ -45,7 +45,7 @@ paper-search-cli/
 │   ├── skills/                 # Bundled Skill 安装 / diff / update 逻辑
 │   └── models/Paper.ts         # 统一论文数据模型
 ├── skills/paper-search/        # 随包发布的 Routing Skill 与 references
-├── docs/                       # 当前架构、ADR、roadmap
+├── docs/                       # 当前架构和 roadmap
 ├── tests/                      # Jest 测试，目录结构大体镜像 src/
 ├── dist/                       # tsc 编译产物，发布用
 └── package.json / tsconfig.json / .env.example
@@ -306,7 +306,7 @@ export interface DownloadTier {
 }
 ```
 
-默认下载层顺序已经稳定，未来如果实现机构访问，应通过 `insertDownloadTierBefore(createDefaultDownloadTiers(), 'scihub', institutionalAccessTier)` 显式插入，并保持默认不启用。
+默认下载层顺序已经稳定。未来如果实现机构访问，应作为显式启用的下载层插入到 `scihub` 前，并保持默认不启用。
 
 ---
 
@@ -341,14 +341,11 @@ export interface DownloadTier {
 | HttpClient 仍是最小 scaffold | 已有 `HttpPolicy` / `HttpClient.request()`，但尚未实现完整 rate limit/cache/retry/error 分类，也未迁移所有平台 | 先迁移少量免费稳定平台，再逐步扩展 |
 | 旧路径兼容层仍存在 | `core/`、`services/`、`utils/` 保留 re-export，部分调用方仍使用旧 import | 后续单独阶段清理旧 import，不与行为改动混做 |
 | Searchers 类型仍手写 | 实例化已由 factory registry 驱动，但 `Searchers` 接口仍显式列出字段 | 后续可用更宽的 registry 类型过渡，减少手写字段 |
-| DownloadTier 未来机构访问未实现 | 当前只支持插入扩展点，默认无 `institutional_access` | 未来按 roadmap 通过显式启用 tier 接入 |
+| DownloadTier 未来机构访问未实现 | 当前只支持插入扩展点，默认无 `institutional_access` | 未来通过显式启用下载层接入，并保持默认不启用 |
 | 文档需要持续约束未来能力 | README / Skill 当前不应宣称机构访问已实现 | 未来能力只写入 roadmap，不进入当前能力表 |
 
 ---
 
 ## 9. 后续路线
 
-后续工作不再放在 `docs/refactor/` 任务书中。当前路线见：
-
-- [`ROADMAP.zh.md`](./ROADMAP.zh.md)
-- [`roadmap/FUTURE_INSTITUTIONAL_ACCESS.zh.md`](./roadmap/FUTURE_INSTITUTIONAL_ACCESS.zh.md)
+后续路线见 [`ROADMAP.zh.md`](./ROADMAP.zh.md)。

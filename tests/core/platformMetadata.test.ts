@@ -4,6 +4,7 @@ import {
   getGenericPlatformToolDescriptors,
   getGenericSearchToolPlatform,
   getGenericSearchToolNames,
+  getPlatformMetadata,
   getPlatformToolDescriptors,
   isKnownSearchPlatform,
   resolvePlatformId
@@ -26,6 +27,20 @@ describe('platformMetadata', () => {
     expect(isKnownSearchPlatform('usenix')).toBe(true);
     expect(isKnownSearchPlatform('openreview')).toBe(true);
     expect(isKnownSearchPlatform('springerlink')).toBe(true);
+    expect(isKnownSearchPlatform('wiley')).toBe(true);
+  });
+
+  it('registers Wiley as a download-only entitled platform', () => {
+    expect(getPlatformMetadata('wiley')).toEqual(
+      expect.objectContaining({
+        id: 'wiley',
+        displayName: 'Wiley TDM',
+        defaultInAll: false,
+        schemaKind: 'wiley-deprecated',
+        capabilityGroups: ['pdf_discovery', 'entitled_access'],
+        configKeys: [['WILEY_TDM_TOKEN']]
+      })
+    );
   });
 
   it('maps generic direct search tools to platforms', () => {
@@ -41,6 +56,7 @@ describe('platformMetadata', () => {
     expect(getDefaultAllSources()).not.toEqual(
       expect.arrayContaining(['wos', 'scholar', 'google_scholar', 'springerlink', 'pubmed_central', 'europe_pmc'])
     );
+    expect(getDefaultAllSources()).not.toContain('wiley');
   });
 
   it('separates direct platform descriptors from generic descriptors', () => {
@@ -66,5 +82,6 @@ describe('platformMetadata', () => {
       'search_openreview',
       'search_springerlink'
     ]);
+    expect(getGenericSearchToolNames()).not.toContain('search_wiley');
   });
 });
